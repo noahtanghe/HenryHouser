@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Afspraak annuleren · Henry Houser</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/config.js"></script>
+  <script src="/annuleer.js" defer></script>
+</head>
+<body>
+  <main class="wrap">
+    <header class="kop">
+      <p class="merk">Henry Houser</p>
+      <h1 id="titel">Afspraak annuleren</h1>
+      <p id="adres" class="adres"></p>
+    </header>
+
+    <p id="laden" class="melding">Even geduld…</p>
+    <p id="fout" class="melding fout" hidden></p>
+
+    <section id="vraag" class="klaar" hidden>
+      <p>Hallo <span id="voornaam"></span>, wil je je bezoek op <strong id="start"></strong> annuleren?</p>
+      <button type="button" id="bevestig" class="knop">Ja, annuleer mijn bezoek</button>
+    </section>
+
+    <section id="klaar" class="klaar" hidden>
+      <p class="scherm">Je bezoek werd geannuleerd.</p>
+      <p>Je ontvangt nog een bevestiging per mail. Alvast succes met de verdere zoektocht!</p>
+      <p><a id="opnieuw" class="link">Toch een nieuw tijdstip kiezen</a></p>
+    </section>
+  </main>
+</body>
+</html>

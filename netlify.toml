@@ -1,0 +1,24 @@
+[build]
+  publish = "web"
+
+# Bestaande bestanden (app.js, style.css, ...) worden niet herschreven.
+[[redirects]]
+  from = "/"
+  to = "https://www.henryhouser.be/immo-aanbod"
+  status = 302
+
+[[redirects]]
+  from = "/annuleer"
+  to = "/annuleer.html"
+  status = 200
+
+[[redirects]]
+  from = "/:slug"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
