@@ -1,7 +1,7 @@
 [build]
   publish = "web"
 
-# Bestaande bestanden (app.js, style.css, ...) worden niet herschreven.
+# Bestaande bestanden (huisstijl.css, js/..., img/...) worden niet herschreven.
 [[redirects]]
   from = "/"
   to = "https://www.henryhouser.be/immo-aanbod"
@@ -19,6 +19,11 @@
   status = 200
 
 [[redirects]]
+  from = "/rapport"
+  to = "/rapport.html"
+  status = 200
+
+[[redirects]]
   from = "/:slug"
   to = "/index.html"
   status = 200
@@ -28,3 +33,14 @@
   [headers.values]
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Het beheer hoort niet in een frame van een andere site.
+[[headers]]
+  for = "/beheer"
+  [headers.values]
+    X-Frame-Options = "DENY"
+
+[[headers]]
+  for = "/beheer.html"
+  [headers.values]
+    X-Frame-Options = "DENY"

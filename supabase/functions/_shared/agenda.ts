@@ -7,6 +7,7 @@ export interface Afspraak {
   titel: string;
   adres: string;
   beschrijving: string;
+  volgnummer?: number; // stijgt bij elke verplaatsing, zodat agenda's de afspraak bijwerken
 }
 
 /** 20261011T074000Z */
@@ -72,6 +73,7 @@ export function ics(a: Afspraak, geannuleerd = false): string {
     `METHOD:${geannuleerd ? "CANCEL" : "PUBLISH"}`,
     "BEGIN:VEVENT",
     `UID:${a.token}@afspraak.henryhouser.be`,
+    `SEQUENCE:${(a.volgnummer ?? 0) + (geannuleerd ? 1 : 0)}`,
     `DTSTAMP:${utcStempel(new Date().toISOString())}`,
     `DTSTART:${utcStempel(a.start)}`,
     `DTEND:${utcStempel(a.eind)}`,

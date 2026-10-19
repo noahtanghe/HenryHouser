@@ -1,6 +1,7 @@
 // POST /functions/v1/boek
-// Body: { slug, start, antwoorden: { voornaam, email, ... }, website? }
+// Body: { slug, start, antwoorden: { voornaam, email, ... }, website?, laad_id?, kanaal?, apparaat? }
 // "website" is een honeypot-veld: bots vullen het in, mensen zien het niet.
+// laad_id, kanaal en apparaat koppelen de boeking aan de weergave (analytics).
 
 import { agendaLinks, verwerkWachtrij, waarden } from "../_shared/berichten.ts";
 import { adminClient, corsHeaders, fout, json } from "../_shared/http.ts";
@@ -11,14 +12,22 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return fout("methode", "Alleen POST.", 405);
 
-  let body: { slug?: string; start?: string; antwoorden?: Record<string, unknown>; website?: string };
+  let body: {
+    slug?: string;
+    start?: string;
+    antwoorden?: Record<string, unknown>;
+    website?: string;
+    laad_id?: string;
+    kanaal?: string;
+    apparaat?: string;
+  };
   try {
     body = await req.json();
   } catch {
     return fout("ongeldig", "Ongeldige aanvraag.");
   }
 
-  const { slug, start, antwoorden = {}, website } = body;
+  const { slug, start, antwoorden = {}, website, laad_id, kanaal, apparaat } = body;
   if (website) return fout("ongeldig", "Ongeldige aanvraag.");
   if (!slug || !start || Number.isNaN(Date.parse(start))) {
     return fout("ongeldig", "Kies eerst een tijdslot.");
@@ -37,6 +46,11 @@ Deno.serve(async (req) => {
     p_slug: slug,
     p_start: new Date(start).toISOString(),
     p_antwoorden: v.antwoorden,
+    p_meta: {
+      laad_id: typeof laad_id === "string" ? laad_id : null,
+      kanaal: typeof kanaal === "string" ? kanaal.slice(0, 60) : null,
+      apparaat: typeof apparaat === "string" ? apparaat : null,
+    },
   });
   if (e2) {
     if (e2.message?.includes("slot_niet_vrij")) {

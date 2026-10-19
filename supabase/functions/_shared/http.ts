@@ -40,3 +40,9 @@ export function publiekeUrl(): string {
 export function functiesUrl(): string {
   return `${env("SUPABASE_URL").replace(/\/$/, "")}/functions/v1`;
 }
+
+/** Publieke URL van een foto in de storage-bucket "fotos". */
+export function fotoUrl(pad: string | null | undefined): string | null {
+  if (!pad) return null;
+  return `${env("SUPABASE_URL").replace(/\/$/, "")}/storage/v1/object/public/fotos/${pad.split("/").map(encodeURIComponent).join("/")}`;
+}

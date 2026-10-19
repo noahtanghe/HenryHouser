@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
   }
 
   const { data: b, error } = await db.from("boekingen")
-    .select("voornaam, start, status, paginas(titel, adres, slug)")
+    .select("voornaam, start, status, paginas(titel, adres, slug, foto_pad)")
     .eq("token", token).maybeSingle();
   if (error) return fout("server", "Er liep iets mis. Probeer het opnieuw.", 500);
   if (!b) return fout("niet_gevonden", "Deze annuleerlink is ongeldig.", 404);
@@ -55,5 +55,6 @@ Deno.serve(async (req) => {
     adres: p.adres,
     titel: p.titel,
     slug: p.slug,
+    foto_pad: p.foto_pad,
   });
 });
