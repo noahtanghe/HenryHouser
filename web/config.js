@@ -1,5 +1,5 @@
-// Publieke instellingen (de anon key is bedoeld om publiek te zijn).
+// Publieke instellingen (de publishable key is bedoeld om publiek te zijn).
 window.AFSPRAAK_CONFIG = {
-  supabaseUrl: "https://<project-ref>.supabase.co",
-  supabaseAnonKey: "<anon-key>",
+  supabaseUrl: "https://tamzchoykjjztsievois.supabase.co",
+  supabaseAnonKey: "sb_publishable_fMjfidLX7jQMrgxabYC5Ug_C0KLjHoh",
 };

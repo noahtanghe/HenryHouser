@@ -22,8 +22,8 @@
     const res = await fetch(`${cfg.supabaseUrl}/rest/v1/rpc/${naam}`, {
       method: "POST",
       headers: {
+        // Nieuwe publishable keys gaan alleen in de apikey-header, niet als Bearer-token.
         apikey: cfg.supabaseAnonKey,
-        Authorization: `Bearer ${cfg.supabaseAnonKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(args),

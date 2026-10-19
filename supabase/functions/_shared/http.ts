@@ -24,7 +24,10 @@ export function env(naam: string, standaard?: string): string {
 }
 
 export function adminClient(): SupabaseClient {
-  return createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), {
+  // SUPABASE_SERVICE_ROLE_KEY zet Supabase zelf; SUPABASE_SECRET_KEY (sb_secret_...) kan als secret
+  // gezet worden als de legacy-sleutels in het project uitgeschakeld zijn.
+  const sleutel = Deno.env.get("SUPABASE_SECRET_KEY") || env("SUPABASE_SERVICE_ROLE_KEY");
+  return createClient(env("SUPABASE_URL"), sleutel, {
     auth: { persistSession: false },
   });
 }

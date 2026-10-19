@@ -63,6 +63,7 @@ select id, '2026-11-08', '2026-11-08', '09:00', '19:00' from paginas where slug 
      CRON_GEHEIM=$(openssl rand -hex 24)
    # Tijdens de testfase alle mail naar één adres:
    supabase secrets set MAIL_OMLEIDEN_NAAR=hendrik@henryhouser.be
+   # Zonder RESEND_API_KEY worden mails niet verstuurd maar gelogd (Edge Functions → Logs).
    supabase functions deploy boek annuleer ics verstuur
    ```
 3. **Cron**: `supabase/cron.sql` invullen (project-ref en hetzelfde `CRON_GEHEIM`) en uitvoeren in de SQL-editor.
