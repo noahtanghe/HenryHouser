@@ -28,6 +28,19 @@ en annuleerknop), alert naar `alert_email` en een melding naar `eigenaar_email`.
 
 Nog niet in de MVP: sms, verplaatsen, intern overzicht, Google Calendar-koppeling.
 
+## Beheerplatform
+
+`https://afspraak.henryhouser.be/beheer`: overzicht van alle adressen met hun komende data, vrije tijdslots en
+afspraken. Per adres: beschikbaarheid toevoegen of schrappen, boekingen bekijken en annuleren, instellingen en
+mailteksten aanpassen, met rechts een live voorbeeld van wat de bezoeker ziet (`?voorbeeld=1`, boekt niet echt).
+
+Inloggen gaat met Supabase Auth (e-mail en wachtwoord, registreren staat uit). Toegang krijgen alleen adressen in
+de tabel `beheerders`. Een collega toevoegen: gebruiker aanmaken in Supabase → Authentication → Users, en
+
+```sql
+insert into beheerders (email) values ('collega@henryhouser.be');
+```
+
 ## Een pagina instellen
 
 Alles staat in de tabel `paginas` (Supabase → Table editor). Een nieuw pand = een rij kopiëren,

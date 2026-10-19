@@ -13,6 +13,11 @@
   status = 200
 
 [[redirects]]
+  from = "/beheer"
+  to = "/beheer.html"
+  status = 200
+
+[[redirects]]
   from = "/:slug"
   to = "/index.html"
   status = 200
