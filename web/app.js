@@ -5,8 +5,11 @@
   const $ = (id) => document.getElementById(id);
 
   // Slug uit het pad, of ?slug= voor lokaal testen.
-  const slug = new URLSearchParams(location.search).get("slug") ||
+  const params = new URLSearchParams(location.search);
+  const slug = params.get("slug") ||
     decodeURIComponent(location.pathname.split("/").filter(Boolean)[0] || "");
+  // ?voorbeeld=1: weergave in het beheerplatform, zonder echt te boeken.
+  const voorbeeld = params.has("voorbeeld");
 
   let pagina = null;
   let slots = [];
@@ -184,6 +187,11 @@
     const fout = controleer();
     if (fout) {
       $("fout-form").textContent = fout;
+      $("fout-form").hidden = false;
+      return;
+    }
+    if (voorbeeld) {
+      $("fout-form").textContent = "Voorbeeld: hier wordt niet echt geboekt.";
       $("fout-form").hidden = false;
       return;
     }
