@@ -1,0 +1,70 @@
+{
+ "intro": "Hallo, het tijdslot dat je hieronder kiest, is het startuur maar geen vaste duurtijd van jouw bezoek. Krijg je graag advies van ouders, architect, aankoopmakelaar, enz... Dat kan! Iedereen is welkom, en blijf gerust zo lang je wenst!",
+ "bevestigingsscherm": "Hallo {voornaam}! Jouw afspraak ligt vast voor {start}.",
+ "mail_onderwerp": "bezoek: {adres}",
+ "mail_bevestiging": "Hallo {voornaam},\n\nBedankt voor je inschrijving. Jouw bezoek aan {adres} ligt vast op **{start}**. Het tijdslot is je startuur, geen vaste duurtijd: blijf gerust zo lang je wenst, en neem gerust ouders, architect of aankoopmakelaar mee.\n\n{agenda_knoppen}\n\n**Hoe verloopt de verkoop?**\nNa de Homerun kan je een schriftelijk bod uitbrengen. Op dinsdag 13 oktober zullen de verkopers beslissen welk bod ze aanvaarden. Je hoort van ons, wat de uitkomst ook is.\n\n**Eerst naar de bank**\nEen bod gebeurt zonder opschortende voorwaarde voor het verkrijgen van een krediet. We raden je daarom aan om vóór je bod langs te gaan bij je bank, zodat je zeker bent van je financiering.\n\nKan je toch niet komen? Laat het ons weten via de knop hieronder, zo geven we het tijdslot vrij voor iemand anders.\n\n{annuleer_knop}\n\nTot dan!\n\nHendrik Tanghe\nHenry Houser\n0495 56 90 87",
+ "mail_eigenaar": "Hallo,\n\nEr is een nieuw bezoek ingepland voor {adres}:\n\n**{start}**: {voornaam} {familienaam}\n\nMet vriendelijke groeten,\nHenry Houser",
+ "mail_alert": "Nieuwe boeking voor {adres}.\n\n**{start}**\n\n{gegevens}",
+ "mail_reminder_onderwerp": "Herinnering bezoek: {adres}",
+ "mail_reminder": "Hallo {voornaam},\n\nEven ter herinnering: je bezoek aan {adres} staat gepland op **{start}**.\n\n{agenda_knoppen}\n\nKan je toch niet komen? Annuleer dan via de knop hieronder.\n\n{annuleer_knop}\n\nTot dan!\n\nHendrik Tanghe\nHenry Houser\n0495 56 90 87",
+ "reminder_uren_vooraf": 48,
+ "mail_annulering_onderwerp": "Jouw bezoek aan {adres}",
+ "mail_annulering": "Hallo {voornaam},\n\nJouw bezoek aan {adres} op {start} werd geannuleerd. Alvast succes met de verdere zoektocht!\n\nHendrik Tanghe\nHenry Houser\n0495 56 90 87",
+ "mail_annulering_alert": "Geannuleerd: bezoek aan {adres} op **{start}**.\n\n{gegevens}",
+ "formuliervelden": [
+  {
+   "key": "voornaam",
+   "type": "text",
+   "label": "Voornaam",
+   "verplicht": true
+  },
+  {
+   "key": "familienaam",
+   "type": "text",
+   "label": "Familienaam",
+   "verplicht": false
+  },
+  {
+   "key": "email",
+   "type": "email",
+   "label": "E-mail",
+   "verplicht": true
+  },
+  {
+   "key": "telefoon",
+   "type": "tel",
+   "label": "Telefoon",
+   "verplicht": true
+  },
+  {
+   "key": "nieuwsbrief",
+   "type": "checkbox",
+   "label": "Ja, ik ontvang graag de nieuwsbrief van Henry Houser",
+   "verplicht": false
+  },
+  {
+   "key": "bron",
+   "type": "select",
+   "label": "Hoe vond je deze aanbieding?",
+   "opties": [
+    "website Henry Houser",
+    "Facebook",
+    "Instagram",
+    "Immoweb",
+    "Zimmo",
+    "Realo",
+    "Spotto",
+    "Immoscoop",
+    "Immomaps",
+    "Luxevastgoed.be",
+    "bord ter plaatse",
+    "buurmailing",
+    "via - via",
+    "Ik weet het niet meer ;-)"
+   ],
+   "verplicht": true
+  }
+ ],
+ "alert_email": "backoffice@henryhouser.be",
+ "afzender": "Henry Houser <backoffice@henryhouser.be>"
+}

@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "description": "Bouwt de demo van het beheer als één HTML-bestand",
+  "scripts": {
+    "bouw": "node bouw.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

@@ -66,6 +66,11 @@ insert into beheerders (email) values ('collega@henryhouser.be');
 van IP en browser met een zout dat elke dag wisselt, zodat unieke bezoekers per dag te tellen zijn zonder dat
 iemand herleidbaar is. De bron komt uit `?utm_source=` of de verwijzende site.
 
+**Demo zonder server**: `tools/demo` bouwt het beheer als één HTML-bestand met verzonnen adressen en bezoekers
+(`cd tools/demo && npm install && node bouw.mjs`). De bezoekerspagina en het verkopersrapport openen er in een
+venster; boeken werkt in het geheugen en verschijnt meteen in het beheer. `mock-api.js` volgt de vorm van
+`web/js/beheer/api.js` en de databasefuncties: pas die mee aan als de API verandert.
+
 ## Teksten en formulier
 
 **Formuliervelden**: `{"key", "label", "type", "verplicht", "opties"}` met type `text`, `email`, `tel`, `textarea`,
