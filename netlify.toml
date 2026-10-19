@@ -6,6 +6,7 @@
   from = "/"
   to = "https://www.henryhouser.be/immo-aanbod"
   status = 302
+  force = true   # anders toont Netlify index.html (de boekingspagina zonder adres)
 
 [[redirects]]
   from = "/annuleer"
