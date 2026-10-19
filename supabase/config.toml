@@ -1,0 +1,15 @@
+# Alleen de instellingen die afwijken van de standaard.
+project_id = "henryhouser-afspraak"
+
+[functions.boek]
+verify_jwt = false
+
+[functions.annuleer]
+verify_jwt = false
+
+[functions.ics]
+verify_jwt = false
+
+# Beveiligd met CRON_GEHEIM in plaats van een JWT.
+[functions.verstuur]
+verify_jwt = false

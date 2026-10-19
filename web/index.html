@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Bezoek plannen · Henry Houser</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/config.js"></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main class="wrap">
+    <header class="kop">
+      <p class="merk">Henry Houser</p>
+      <h1 id="titel">Bezoek plannen</h1>
+      <p id="adres" class="adres"></p>
+    </header>
+
+    <p id="laden" class="melding">Even geduld…</p>
+    <p id="fout-algemeen" class="melding fout" hidden></p>
+
+    <!-- Stap 1: tijdslot kiezen -->
+    <section id="stap-slot" hidden>
+      <p id="intro" class="intro"></p>
+      <h2>Kies je startuur</h2>
+      <div id="dagen" class="dagen" role="tablist" aria-label="Dagen"></div>
+      <div id="slots" class="slots"></div>
+      <p id="geen-slots" class="melding" hidden>Er zijn momenteel geen vrije tijdslots.</p>
+    </section>
+
+    <!-- Stap 2: gegevens -->
+    <section id="stap-form" hidden>
+      <div class="gekozen">
+        <span>Gekozen: <strong id="gekozen-tekst"></strong></span>
+        <button type="button" id="wijzig" class="link">Wijzig</button>
+      </div>
+      <form id="form" novalidate>
+        <div id="velden"></div>
+        <!-- honeypot -->
+        <div class="hp" aria-hidden="true">
+          <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+        </div>
+        <p id="fout-form" class="melding fout" hidden></p>
+        <button type="submit" id="verstuur" class="knop">Bevestig afspraak</button>
+      </form>
+    </section>
+
+    <!-- Stap 3: bevestiging -->
+    <section id="stap-klaar" hidden>
+      <div class="klaar">
+        <p id="scherm" class="scherm"></p>
+        <p>Voeg je afspraak toe aan je agenda:</p>
+        <p class="agenda">
+          <a id="ag-google" class="knop secundair" target="_blank" rel="noopener">Google Agenda</a>
+          <a id="ag-office" class="knop secundair" target="_blank" rel="noopener">Office 365</a>
+          <a id="ag-ics" class="knop secundair">Agenda (.ics)</a>
+        </p>
+        <p class="klein">Je ontvangt binnen enkele minuten nog een bevestigingsmail met alle info.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
