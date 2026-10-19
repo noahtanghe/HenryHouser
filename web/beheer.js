@@ -125,7 +125,8 @@
       lijst.append(el("a", { className: "item kaart", href: `#/p/${p.id}` },
         el("div", { className: "item-hoofd" },
           el("strong", { textContent: p.adres }),
-          el("span", { className: "klein", textContent: p.titel })),
+          el("span", { className: "klein", textContent: p.titel }),
+          el("span", { className: "item-link", textContent: api.publiekeUrl(p.slug).replace(/^https?:\/\//, "") })),
         el("div", { className: "item-cijfers" },
           el("span", { textContent: periode(p) }),
           el("span", { textContent: `${p.vrije_slots} vrije tijdslots` }),
@@ -290,6 +291,14 @@
     const url = api.publiekeUrl(p.slug);
     $("d-link").href = url;
     $("d-link").textContent = url.replace(/^https?:\/\//, "");
+    $("d-kopieer").onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast("Link gekopieerd.");
+      } catch {
+        toast(url);
+      }
+    };
     const st = p.actief ? { tekst: "Online", klasse: "open" } : { tekst: "Staat uit", klasse: "uit" };
     $("d-status").textContent = st.tekst;
     $("d-status").className = `badge ${st.klasse}`;

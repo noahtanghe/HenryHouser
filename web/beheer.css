@@ -99,3 +99,5 @@
 
 .item .badge { justify-self: start; }
 .adres a { color: inherit; }
+.item-link { font-size: 14px; color: var(--accent); margin-top: 2px; overflow-wrap: anywhere; }
+#d-kopieer { font-size: 14px; margin-left: 6px; }
