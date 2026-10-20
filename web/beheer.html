@@ -2,125 +2,23 @@
 <html lang="nl">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#f4eedd">
   <title>Beheer · Henry Houser</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/poppins-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/poppins-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/poppins-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/huisstijl.css">
   <link rel="stylesheet" href="/beheer.css">
   <script src="/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-  <script src="/beheer.js" defer></script>
+  <script type="module" src="/js/beheer/main.js"></script>
 </head>
 <body class="beheer">
-  <header class="balk">
-    <a href="#/" class="balk-merk">Henry Houser <span>Afspraken</span></a>
-    <span id="gebruiker" class="balk-gebruiker" hidden>
-      <span id="gebruiker-email"></span>
-      <button type="button" id="uitloggen" class="link">Uitloggen</button>
-    </span>
-  </header>
-
-  <p id="laden" class="melding midden">Even geduld…</p>
-  <p id="fout" class="melding fout midden" hidden></p>
-
-  <!-- Inloggen -->
-  <section id="login" class="login" hidden>
-    <h1>Inloggen</h1>
-    <form id="login-form">
-      <div class="veld"><label for="login-email">E-mail</label><input type="email" id="login-email" autocomplete="username" required></div>
-      <div class="veld"><label for="login-wachtwoord">Wachtwoord</label><input type="password" id="login-wachtwoord" autocomplete="current-password" required></div>
-      <p id="login-fout" class="melding fout" hidden></p>
-      <button type="submit" class="knop">Inloggen</button>
-    </form>
-  </section>
-
-  <!-- Overzicht -->
-  <section id="overzicht" class="paneel" hidden>
-    <div class="paneel-kop">
-      <h1>Adressen</h1>
-      <button type="button" id="nieuw-knop" class="knop">Nieuw adres</button>
-    </div>
-    <form id="nieuw-form" class="kaart nieuw" hidden>
-      <h2>Nieuw adres</h2>
-      <p class="klein">Teksten, formulier en mailinstellingen worden overgenomen van het gekozen adres.</p>
-      <div class="rij">
-        <div class="veld"><label for="nieuw-adres">Adres</label><input id="nieuw-adres" required placeholder="Leuzestraat 98, 8500 Kortrijk"></div>
-        <div class="veld"><label for="nieuw-slug">Link</label><input id="nieuw-slug" required pattern="[a-z0-9][a-z0-9-]*" placeholder="leuzestraat98"></div>
-      </div>
-      <div class="veld"><label for="nieuw-titel">Titel</label><input id="nieuw-titel" required placeholder="Homerun in Leuzestraat 98 in 8500 Kortrijk"></div>
-      <div class="veld"><label for="nieuw-bron">Kopie van</label><select id="nieuw-bron"></select></div>
-      <p id="nieuw-fout" class="melding fout" hidden></p>
-      <button type="submit" class="knop">Aanmaken</button>
-      <button type="button" id="nieuw-annuleer" class="link">Annuleren</button>
-    </form>
-    <div id="lijst" class="lijst"></div>
-  </section>
-
-  <!-- Detail -->
-  <section id="detail" class="paneel" hidden>
-    <a href="#/" class="terug">← Alle adressen</a>
-    <div class="paneel-kop">
-      <div>
-        <h1 id="d-titel"></h1>
-        <p class="adres"><span id="d-adres"></span> · <a id="d-link" target="_blank" rel="noopener"></a> <button type="button" id="d-kopieer" class="link">Kopieer link</button></p>
-      </div>
-      <span id="d-status" class="badge"></span>
-    </div>
-
-    <div class="detail-grid">
-      <div>
-        <nav class="tabs" role="tablist">
-          <a role="tab" data-tab="beschikbaarheid">Beschikbaarheid</a>
-          <a role="tab" data-tab="boekingen">Boekingen</a>
-          <a role="tab" data-tab="instellingen">Instellingen</a>
-          <a role="tab" data-tab="teksten">Teksten en mails</a>
-        </nav>
-
-        <div data-paneel="beschikbaarheid" class="kaart">
-          <p class="klein">Per rij de uren waarop bezoekers een startuur kunnen kiezen. Een Homerun is één dag.</p>
-          <table class="tabel">
-            <thead><tr><th>Datum</th><th>Uren</th><th>Dagen</th><th></th></tr></thead>
-            <tbody id="b-rijen"></tbody>
-          </table>
-          <form id="b-form" class="b-form">
-            <div class="veld"><label for="b-van-d">Van</label><input type="date" id="b-van-d" required></div>
-            <div class="veld"><label for="b-tot-d">Tot en met</label><input type="date" id="b-tot-d"></div>
-            <div class="veld"><label for="b-van">Vanaf</label><input type="time" id="b-van" value="09:00" required></div>
-            <div class="veld"><label for="b-tot">Tot</label><input type="time" id="b-tot" value="19:00" required></div>
-            <button type="submit" class="knop">Toevoegen</button>
-          </form>
-          <p id="b-fout" class="melding fout" hidden></p>
-        </div>
-
-        <div data-paneel="boekingen" class="kaart">
-          <label class="schakel"><input type="checkbox" id="k-alles"> Ook voorbije en geannuleerde</label>
-          <div class="tabel-wrap">
-            <table class="tabel">
-              <thead><tr><th>Wanneer</th><th>Bezoeker</th><th>Contact</th><th>Status</th><th></th></tr></thead>
-              <tbody id="k-rijen"></tbody>
-            </table>
-          </div>
-          <p id="k-leeg" class="melding" hidden>Nog geen boekingen.</p>
-        </div>
-
-        <form data-paneel="instellingen" class="kaart" id="form-instellingen"></form>
-        <form data-paneel="teksten" class="kaart" id="form-teksten"></form>
-      </div>
-
-      <aside class="voorbeeld">
-        <div class="voorbeeld-kop">
-          <strong>Wat de bezoeker ziet</strong>
-          <span class="toggle">
-            <button type="button" data-breedte="390" aria-pressed="true">Gsm</button>
-            <button type="button" data-breedte="0" aria-pressed="false">Computer</button>
-          </span>
-        </div>
-        <div class="voorbeeld-raam"><iframe id="voorbeeld" title="Voorbeeld boekingspagina"></iframe></div>
-        <p class="klein">Voorbeeld: hier boeken maakt geen afspraak aan.</p>
-      </aside>
-    </div>
-  </section>
-
-  <div id="toast" class="toast" hidden></div>
+  <div id="app"><div class="laad-blok" role="status"><div class="laad-balk"></div><span class="sr">Laden…</span></div></div>
+  <noscript><p style="padding:24px">Het beheer heeft JavaScript nodig.</p></noscript>
 </body>
 </html>

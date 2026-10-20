@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { Afspraak, googleLink, ics, office365Link } from "./agenda.ts";
-import { functiesUrl, publiekeUrl } from "./http.ts";
+import { fotoUrl, functiesUrl, publiekeUrl } from "./http.ts";
 import { verstuurMail } from "./mail.ts";
 import {
   Blok,
@@ -23,7 +23,7 @@ export type Boeking = Record<string, any>;
 export interface Bericht {
   id: string;
   boeking_id: string;
-  soort: "bevestiging" | "alert" | "eigenaar" | "reminder" | "annulering" | "annulering_alert";
+  soort: "bevestiging" | "alert" | "eigenaar" | "reminder" | "annulering" | "annulering_alert" | "verplaatst";
   ontvanger: string;
   pogingen: number;
 }
@@ -38,6 +38,19 @@ export function icsUrl(b: Boeking): string {
   return `${functiesUrl()}/ics?token=${b.token}`;
 }
 
+/** Verkopersrapport: cijfers over de interesse, zonder persoonsgegevens. */
+export function rapportUrl(p: Pagina): string {
+  return `${publiekeUrl()}/rapport?token=${p.rapport_token}`;
+}
+
+const getal = new Intl.NumberFormat("nl-BE");
+
+/** De foto in de mails: de liggende uitsnede die het beheer naast elke foto oplaadt. */
+export function mailFotoPad(pad: string | null | undefined): string | null {
+  if (!pad) return null;
+  return /^[^/]+\/\d+\.jpg$/.test(pad) ? pad.replace(/\.jpg$/, "-breed.jpg") : pad;
+}
+
 export function afspraakVoor(p: Pagina, b: Boeking): Afspraak {
   return {
     token: b.token,
@@ -46,6 +59,7 @@ export function afspraakVoor(p: Pagina, b: Boeking): Afspraak {
     titel: `Bezoek ${p.adres}`,
     adres: p.adres,
     beschrijving: `Bezoek aan ${p.adres} met Henry Houser.\nKan je niet komen? Annuleer via ${annuleerUrl(b)}`,
+    volgnummer: b.ics_volgnummer ?? 0,
   };
 }
 
@@ -63,6 +77,8 @@ export function waarden(p: Pagina, b: Boeking): Waarden {
     start: formatStart(b.start),
     datum: formatDatum(b.start),
     start_uur: formatUur(b.start),
+    eigenaar_naam: p.eigenaar_naam ?? "",
+    kickoff_prijs: p.kickoff_prijs ? `${getal.format(p.kickoff_prijs)} euro` : "",
   };
 }
 
@@ -86,10 +102,12 @@ function gegevensRijen(p: Pagina, b: Boeking): [string, string][] {
 const STANDAARD: Record<Bericht["soort"], string> = {
   bevestiging: "Hallo {voornaam},\n\nJouw bezoek aan {adres} ligt vast op **{start}**.\n\n{agenda_knoppen}\n\n{annuleer_knop}",
   reminder: "Hallo {voornaam},\n\nEven ter herinnering: je bezoek aan {adres} staat gepland op **{start}**.\n\n{agenda_knoppen}\n\n{annuleer_knop}",
-  eigenaar: "Er is een nieuw bezoek ingepland voor {adres} op **{start}**.",
+  eigenaar: "Er is een nieuw bezoek ingepland voor {adres} op **{start}**.\n\n{rapport_knop}",
   alert: "Nieuwe boeking voor {adres}.\n\n**{start}**\n\n{gegevens}",
   annulering: "Hallo {voornaam},\n\nJouw bezoek aan {adres} op {start} werd geannuleerd.",
   annulering_alert: "Geannuleerd: bezoek aan {adres} op **{start}**.\n\n{gegevens}",
+  verplaatst:
+    "Hallo {voornaam},\n\nJe bezoek aan {adres} is verplaatst naar **{start}**.\n\n{agenda_knoppen}\n\nKan je op dit nieuwe tijdstip niet komen? Laat het ons weten of annuleer via de knop hieronder.\n\n{annuleer_knop}",
 };
 
 /** Bouwt de mail voor één bericht op uit de pagina-teksten. */
@@ -99,10 +117,11 @@ export function bouwMail(soort: Bericht["soort"], p: Pagina, b: Boeking) {
   const blokken: Record<string, Blok> = {
     agenda_knoppen: knoppen([
       { label: "Google Agenda", url: links.google },
-      { label: "Office 365", url: links.office365 },
-      { label: "Agenda (.ics)", url: links.ics },
+      { label: "Outlook", url: links.office365 },
+      { label: "Apple of andere (.ics)", url: links.ics },
     ]),
-    annuleer_knop: knoppen([{ label: "Afspraak annuleren", url: annuleerUrl(b) }]),
+    annuleer_knop: knoppen([{ label: "Afspraak annuleren", url: annuleerUrl(b) }], "lijn"),
+    rapport_knop: knoppen([{ label: "Bekijk de interesse in je woning", url: rapportUrl(p) }], "zwart"),
     gegevens: gegevensTabel(gegevensRijen(p, b)),
   };
 
@@ -113,6 +132,7 @@ export function bouwMail(soort: Bericht["soort"], p: Pagina, b: Boeking) {
     alert: p.mail_alert,
     annulering: p.mail_annulering,
     annulering_alert: p.mail_annulering_alert,
+    verplaatst: p.mail_verplaatst,
   }[soort] || STANDAARD[soort];
 
   const onderwerpSjabloon: string = {
@@ -122,15 +142,23 @@ export function bouwMail(soort: Bericht["soort"], p: Pagina, b: Boeking) {
     alert: p.mail_onderwerp,
     annulering: p.mail_annulering_onderwerp,
     annulering_alert: `Geannuleerd: ${p.mail_onderwerp}`,
+    verplaatst: p.mail_verplaatst_onderwerp || "Nieuw tijdstip voor je bezoek: {adres}",
   }[soort];
 
   const inhoud = render(sjabloon, w, blokken);
-  const naarBezoeker = soort === "bevestiging" || soort === "reminder" || soort === "annulering";
-  const metIcs = soort === "bevestiging" || soort === "annulering";
+  const naarBezoeker = ["bevestiging", "reminder", "annulering", "verplaatst"].includes(soort);
+  const metIcs = soort === "bevestiging" || soort === "annulering" || soort === "verplaatst";
+  // De foto van het pand bovenaan, behalve in de interne meldingen.
+  const metFoto = naarBezoeker || soort === "eigenaar";
 
   return {
     onderwerp: vulIn(onderwerpSjabloon, w),
-    html: mailHtml(inhoud.html),
+    html: mailHtml(inhoud.html, {
+      foto: metFoto ? fotoUrl(mailFotoPad(p.foto_pad)) : null,
+      adres: p.adres,
+      kop: metFoto,
+      logo: `${publiekeUrl()}/img/logo-mail.png`,
+    }),
     tekst: inhoud.tekst,
     // Interne mails: antwoorden gaat rechtstreeks naar de bezoeker.
     antwoordAan: naarBezoeker ? p.antwoord_aan : b.email,
