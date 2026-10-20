@@ -90,6 +90,7 @@ let actieveDag = null; // "2026-10-31"
 let gekozen = null;    // slot
 let stap = 1;
 let melding = null;    // tekst boven de tijdsloten (bv. slot net volzet)
+let introOpen = false; // intro volledig getoond
 let bevestigingsscherm = null; // alleen in het voorbeeld (de echte tekst komt van de server)
 
 const $ = {};          // vaste elementen
@@ -154,7 +155,23 @@ function stappenBalk() {
 function teken() {
   const inhoud = stap === 1 ? stap1() : stap === 2 ? stap2() : stap3();
   $.plannen.replaceChildren(stappenBalk(), ...[].concat(inhoud));
+  toonLeesMeer();
 }
+
+/** "Lees meer" alleen als de intro echt ingekort is. */
+function toonLeesMeer() {
+  const intro = $.plannen.querySelector(".intro");
+  if (!intro) return;
+  const tekst = intro.querySelector(".intro-tekst");
+  const meer = intro.querySelector(".intro-meer");
+  intro.classList.remove("past");
+  const ingekort = !introOpen && tekst.scrollHeight > tekst.clientHeight + 2;
+  meer.hidden = !ingekort && !introOpen;
+  intro.classList.toggle("past", !ingekort && !introOpen);
+}
+addEventListener("resize", () => $.plannen && toonLeesMeer());
+// Met de echte lettertypes loopt de tekst langer dan met de reserve.
+document.fonts?.ready.then(() => $.plannen && toonLeesMeer());
 
 function gaNaar(n, { focus = true } = {}) {
   stap = n;
@@ -184,8 +201,19 @@ function contactKnoppen() {
 function stap1() {
   const delen = [];
   if (pagina.intro) {
-    const intro = el("div", { className: "tekst intro" });
-    intro.innerHTML = render(pagina.intro);
+    // Ingekort, zodat de startmomenten meteen in beeld zijn; "Lees meer" toont de rest.
+    const tekst = el("div", { className: "tekst intro-tekst", id: "intro-tekst" });
+    tekst.innerHTML = render(pagina.intro);
+    const meer = el("button", { type: "button", className: "link intro-meer", "aria-controls": "intro-tekst", hidden: true },
+      introOpen ? "Lees minder" : "Lees meer");
+    const intro = el("div", { className: `intro${introOpen ? " open" : ""}` }, tekst, meer);
+    meer.addEventListener("click", () => {
+      introOpen = !introOpen;
+      intro.classList.toggle("open", introOpen);
+      meer.textContent = introOpen ? "Lees minder" : "Lees meer";
+      meer.setAttribute("aria-expanded", String(introOpen));
+    });
+    meer.setAttribute("aria-expanded", String(introOpen));
     delen.push(intro);
   }
 
@@ -204,10 +232,10 @@ function stap1() {
   if (!dagen.includes(actieveDag)) actieveDag = dagen[0];
   const metPlaatsen = slots.some((s) => s.plaatsen > 1);
 
-  delen.push(el("h2", { id: "plannen-kop" }, "Kies je startuur"),
-    el("p", { className: "onder-kop" }, dagen.length === 1
-      ? cap(datumLang(actieveDag))
-      : "Kies eerst een dag, daarna je startuur."));
+  // Bij meerdere dagen spreken de dagknoppen voor zich.
+  delen.push(...dagen.length === 1
+    ? [el("h2", { id: "plannen-kop" }, "Kies je startuur"), el("p", { className: "onder-kop" }, cap(datumLang(actieveDag)))]
+    : [el("h2", { id: "plannen-kop", className: "kop-los" }, "Kies je dag en startuur")]);
   if (melding) delen.push(el("p", { className: "fout-blok", role: "alert" }, melding));
 
   if (dagen.length > 1) {
@@ -339,16 +367,14 @@ function stap2() {
     el("label", {}, "Website", el("input", { type: "text", name: "website", tabIndex: -1, autocomplete: "off" })));
   const fout = el("p", { className: "fout-blok", role: "alert", hidden: true });
   const knop = el("button", { type: "submit", className: "knop groot" }, "Bevestig mijn bezoek");
-  form.append(hp,
-    el("p", { className: "privacy" }, "We gebruiken je gegevens alleen om je bezoek te regelen en je op de hoogte te houden over dit pand."),
-    fout, el("div", { className: "formulier-acties" }, knop));
+  form.append(hp, fout, el("div", { className: "formulier-acties" }, knop),
+    el("p", { className: "privacy" }, "We gebruiken je gegevens alleen om je bezoek te regelen en je op de hoogte te houden over dit pand."));
   form.addEventListener("submit", (e) => verstuur(e, form, knop, fout));
 
   const wijzig = el("button", { type: "button", className: "link" }, "Wijzig");
   wijzig.addEventListener("click", () => gaNaar(1));
   return [
-    el("h2", { id: "plannen-kop" }, "Jouw gegevens"),
-    el("p", { className: "onder-kop" }, "Nog één stap: laat weten wie er komt."),
+    el("h2", { id: "plannen-kop", className: "kop-los" }, "Jouw gegevens"),
     el("div", { className: "gekozen" }, icoon("kalender"),
       el("div", { className: "gekozen-tekst" },
         el("strong", {}, `${cap(datumLang(dagSleutel(gekozen.start)))} om ${uur(gekozen.start)}`),
