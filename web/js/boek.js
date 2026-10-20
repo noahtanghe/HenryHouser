@@ -90,7 +90,6 @@ let actieveDag = null; // "2026-10-31"
 let gekozen = null;    // slot
 let stap = 1;
 let melding = null;    // tekst boven de tijdsloten (bv. slot net volzet)
-let introOpen = false; // intro volledig getoond
 let bevestigingsscherm = null; // alleen in het voorbeeld (de echte tekst komt van de server)
 
 const $ = {};          // vaste elementen
@@ -155,23 +154,7 @@ function stappenBalk() {
 function teken() {
   const inhoud = stap === 1 ? stap1() : stap === 2 ? stap2() : stap3();
   $.plannen.replaceChildren(stappenBalk(), ...[].concat(inhoud));
-  toonLeesMeer();
 }
-
-/** "Lees meer" alleen als de intro echt ingekort is. */
-function toonLeesMeer() {
-  const intro = $.plannen.querySelector(".intro");
-  if (!intro) return;
-  const tekst = intro.querySelector(".intro-tekst");
-  const meer = intro.querySelector(".intro-meer");
-  intro.classList.remove("past");
-  const ingekort = !introOpen && tekst.scrollHeight > tekst.clientHeight + 2;
-  meer.hidden = !ingekort && !introOpen;
-  intro.classList.toggle("past", !ingekort && !introOpen);
-}
-addEventListener("resize", () => $.plannen && toonLeesMeer());
-// Met de echte lettertypes loopt de tekst langer dan met de reserve.
-document.fonts?.ready.then(() => $.plannen && toonLeesMeer());
 
 function gaNaar(n, { focus = true } = {}) {
   stap = n;
@@ -201,19 +184,8 @@ function contactKnoppen() {
 function stap1() {
   const delen = [];
   if (pagina.intro) {
-    // Ingekort, zodat de startmomenten meteen in beeld zijn; "Lees meer" toont de rest.
-    const tekst = el("div", { className: "tekst intro-tekst", id: "intro-tekst" });
-    tekst.innerHTML = render(pagina.intro);
-    const meer = el("button", { type: "button", className: "link intro-meer", "aria-controls": "intro-tekst", hidden: true },
-      introOpen ? "Lees minder" : "Lees meer");
-    const intro = el("div", { className: `intro${introOpen ? " open" : ""}` }, tekst, meer);
-    meer.addEventListener("click", () => {
-      introOpen = !introOpen;
-      intro.classList.toggle("open", introOpen);
-      meer.textContent = introOpen ? "Lees minder" : "Lees meer";
-      meer.setAttribute("aria-expanded", String(introOpen));
-    });
-    meer.setAttribute("aria-expanded", String(introOpen));
+    const intro = el("div", { className: "tekst intro" });
+    intro.innerHTML = render(pagina.intro);
     delen.push(intro);
   }
 
