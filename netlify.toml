@@ -1,6 +1,14 @@
 [build]
   publish = "web"
 
+# Altijd https: wie via http binnenkomt (oude link, geschiedenis in de browser) gaat naar de beveiligde versie.
+# Deze regel moet bovenaan staan, Netlify neemt de eerste regel die past.
+[[redirects]]
+  from = "http://afspraak.henryhouser.be/*"
+  to = "https://afspraak.henryhouser.be/:splat"
+  status = 301
+  force = true
+
 # Bestaande bestanden (huisstijl.css, js/..., img/...) worden niet herschreven.
 [[redirects]]
   from = "/"
@@ -32,6 +40,8 @@
   for = "/*"
   [headers.values]
     X-Content-Type-Options = "nosniff"
+    # Na één bezoek via https gebruikt de browser nooit nog http voor dit adres.
+    Strict-Transport-Security = "max-age=31536000"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
 # Het beheer hoort niet in een frame van een andere site.
