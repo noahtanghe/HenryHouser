@@ -76,17 +76,7 @@
 .stappen li[aria-current="step"] { color: var(--inkt); font-weight: 600; }
 .stappen li.klaar { color: var(--zacht); }
 
-/* Intro: twee regels, de rest achter "Lees meer". */
-.intro { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--lijn-zacht); }
-.intro-tekst {
-  --regels: 2;
-  font-size: 15px; line-height: 1.6;
-  max-height: calc(var(--regels) * 1.6em); overflow: hidden;
-  -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent);
-}
-.intro.past .intro-tekst { -webkit-mask-image: none; mask-image: none; }
-.intro.open .intro-tekst { max-height: none; -webkit-mask-image: none; mask-image: none; }
-.intro-meer { margin-top: 4px; font-size: 14px; font-weight: 500; }
+.intro { margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid var(--lijn-zacht); font-size: 15.5px; line-height: 1.65; }
 
 .plannen h2 { font-size: 22px; margin-bottom: 2px; }
 .plannen .onder-kop { color: var(--zacht); font-size: 14.5px; margin-bottom: 14px; }
@@ -109,13 +99,14 @@
 
 .dagdeel + .dagdeel { margin-top: 14px; }
 .dagdeel h3 { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--zacht); margin-bottom: 7px; }
-.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; }
+/* Vijf per rij: een voormiddag van vijf startmomenten past op één regel. */
+.slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .slot {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
   min-height: 46px; padding: 4px 6px;
   border: 1.5px solid #d9cfb6; background: var(--kaart); cursor: pointer;
   font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--inkt);
-  transition: background-color .12s, border-color .12s;
+  white-space: nowrap; transition: background-color .12s, border-color .12s;
 }
 .slot small { font-size: 11px; font-weight: 500; color: var(--zacht); }
 .slot:hover { background: var(--aqua-zacht); border-color: var(--inkt); }
@@ -169,36 +160,43 @@
   .pand-info h1 { font-size: 30px; }
 }
 
-/* Computer: foto en adres links, het witte kader rechts, samen binnen één scherm. */
+/* Computer: foto en adres links, het witte kader rechts, samen in het midden van het scherm. */
 @media (min-width: 960px) {
-  .boeking { padding: 4px 20px 0; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 48px; align-items: start; }
-  .pand { position: sticky; top: 16px; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
-  .pand .pand-foto { aspect-ratio: 4 / 5; max-height: max(240px, calc(100vh - 300px)); }
-  .pand-info { gap: 6px; }
-  .pand-info .oog { display: block; font-size: 13px; }
-  .pand-info h1 { font-size: clamp(32px, 3.1vw, 44px); }
-  .pand-info > .klein { font-size: 14.5px; }
-  .feiten { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px 24px; margin-top: 8px; }
-  .feiten div { flex-direction: column; gap: 2px; }
-  .feiten dt { font-size: 12px; }
-  .feiten dd { font-size: 16px; }
-  .pand-link { font-size: 15.5px; }
-  .plannen { margin: 0; padding: 22px 34px 26px; border: 1px solid var(--lijn); box-shadow: var(--schaduw); }
-  .stappen { margin-bottom: 14px; font-size: 13px; }
-  .intro-tekst { --regels: 3; font-size: 16px; }
-  .plannen h2 { font-size: 26px; }
+  .kopbalk, .boeking { max-width: 1280px; }
+  .boeking {
+    padding: 8px 24px 24px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px;
+    align-items: center; align-content: center; min-height: calc(100vh - 72px);
+  }
+  .pand { grid-template-columns: minmax(0, 1fr); gap: 22px; align-items: start; }
+  .pand .pand-foto { aspect-ratio: 4 / 5; max-height: max(260px, calc(100vh - 320px)); }
+  .pand-info { gap: 8px; }
+  .pand-info .oog { display: block; font-size: 14px; }
+  .pand-info h1 { font-size: clamp(38px, 3.6vw, 54px); }
+  .pand-info > .klein { font-size: 15.5px; }
+  .feiten { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 28px; margin-top: 10px; }
+  .feiten div { flex-direction: column; gap: 3px; }
+  .feiten dt { font-size: 12.5px; }
+  .feiten dd { font-size: 18px; }
+  .pand-link { font-size: 16.5px; margin-top: 8px; }
+  .pand-link svg { width: 18px; height: 18px; }
+  .plannen { margin: 0; padding: 36px 46px 40px; border: 1px solid var(--lijn); box-shadow: var(--schaduw); }
+  .stappen { margin-bottom: 18px; font-size: 14px; }
+  .stappen li + li::before { width: 18px; }
+  .intro { margin-bottom: 22px; padding-bottom: 22px; font-size: 18px; line-height: 1.7; }
+  .plannen h2 { font-size: 32px; margin-bottom: 4px; }
+  .plannen h2.kop-los { margin-bottom: 18px; }
+  .plannen .onder-kop { font-size: 16.5px; margin-bottom: 20px; }
+  .dag { min-width: 84px; padding: 7px 12px; }
+  .dag .dag-nr { font-size: 22px; }
   /* Dagdeel links, startmomenten rechts: scheelt een regel per dagdeel. */
-  .dagdeel { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: start; }
-  .dagdeel + .dagdeel { margin-top: 8px; }
-  .dagdeel h3 { margin: 0; line-height: 44px; }
-  .slots { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); }
-  .slot { min-height: 44px; }
-  /* Gegevens: zo compact dat de knop op een laptopscherm zichtbaar blijft. */
-  .gekozen { padding: 8px 14px; margin-bottom: 16px; }
-  .formulier, .formulier .rij2 { gap: 12px; }
-  .formulier .veld input:not([type=checkbox]), .formulier .veld select { min-height: 44px; padding-block: 9px; }
-  .formulier .knop.groot { min-height: 52px; }
-  .privacy { font-size: 13px; }
+  .dagdeel { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 14px; align-items: start; }
+  .dagdeel + .dagdeel { margin-top: 10px; }
+  .dagdeel h3 { margin: 0; font-size: 13.5px; line-height: 54px; }
+  .slots { gap: 10px; }
+  .slot { min-height: 54px; font-size: 19px; }
+  .gekozen { padding: 12px 16px; margin-bottom: 20px; }
+  .gekozen-tekst strong { font-size: 17px; }
+  .formulier, .formulier .rij2 { gap: 16px; }
 }
 
 /* ---------------------------------------------------------------------------
