@@ -34,6 +34,7 @@ const PADEN = {
   dashboard: '<rect x="3.5" y="3.5" width="7" height="9" rx="1"/><rect x="13.5" y="3.5" width="7" height="5" rx="1"/><rect x="13.5" y="11.5" width="7" height="9" rx="1"/><rect x="3.5" y="15.5" width="7" height="5" rx="1"/>',
   link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   verplaats: '<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
+  vernieuw: '<path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4"/>',
   bod: '<path d="M14 4 20 10M11 7l6 6M4 20l7-7M9.5 5.5l9 9-3 3-9-9z"/>',
   pijlOp: '<path d="M7 17 17 7M9 7h8v8"/>',
   pijlNeer: '<path d="M7 7l10 10M17 9v8H9"/>',

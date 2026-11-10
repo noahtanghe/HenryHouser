@@ -55,6 +55,10 @@ export function supabaseApi(cfg) {
     overzicht: async () => ok(await sb.rpc("beheer_overzicht")),
     statistiek: async (id) => ok(await sb.rpc("beheer_statistiek", { p_pagina_id: id })),
 
+    // Monday ----------------------------------------------------------------------
+    mondayStatus: async () => ok(await sb.from("monday_sync").select("*").maybeSingle()),
+    mondayBijwerken: () => functie("monday", {}, true),
+
     // Pagina's ------------------------------------------------------------------
     pagina: async (id) => ok(await sb.from("paginas").select("*").eq("id", id).single()),
     paginaBewaren: async (id, velden) => ok(await sb.from("paginas").update(velden).eq("id", id).select().single()),

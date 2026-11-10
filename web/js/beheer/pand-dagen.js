@@ -5,7 +5,7 @@
 import { meter } from "../grafieken.js";
 import { icoon } from "../iconen.js";
 import { cap, dagSleutel, datumKaal, datumLang, el, getal, uur, vandaagSleutel } from "../tekst.js";
-import { dagenVan, kortUur, minuten, startmomenten } from "./datum.js";
+import { dagenVan, komendeDagen, kortUur, minuten, startmomenten } from "./datum.js";
 import { staat } from "./staat.js";
 import { aantal, bevestig, datumBlad, foutTekst, ikoonKnop, leeg, openDialoog, sectie, segment, toast, veld } from "./ui.js";
 
@@ -14,10 +14,10 @@ const WD_LANG = ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zate
 const jaarErbij = (d) => (d.slice(0, 4) !== vandaagSleutel().slice(0, 4) ? ` ${d.slice(0, 4)}` : "");
 
 /** Formulier voor één rij beschikbaarheid (nieuw of wijzigen). */
-function dagForm(p, rij = null) {
+function dagForm(p, rij = null, voorstel = null) {
   let soort = rij && rij.datum_van !== rij.datum_tot ? "periode" : "dag";
   const weekdagen = new Set(rij?.weekdagen || [1, 2, 3, 4, 5, 6, 7]);
-  const dag = el("input", { type: "date", value: rij?.datum_van || "" });
+  const dag = el("input", { type: "date", value: rij?.datum_van || voorstel || "" });
   const vanD = el("input", { type: "date", value: rij?.datum_van || "" });
   const totD = el("input", { type: "date", value: rij?.datum_tot || "" });
   const van = el("input", { type: "time", step: 300, value: kortUur(rij?.van || "09:00") });
@@ -155,7 +155,9 @@ export async function toon(paneel, ctx) {
     const voorbij = rijen.filter((r) => r.datum_tot < vandaag).reverse();
     lijstSectie.replaceChildren(sectie({
       titel: "Bezoekdagen",
-      sub: ctx.pagina.actief ? "Bezoekers kiezen een startmoment op deze dagen." : "De pagina staat offline: bezoekers kunnen nog niet boeken.",
+      sub: ctx.pagina.actief ? "Bezoekers kiezen een startmoment op deze dagen."
+        : ctx.pagina.concept ? "De pagina is nog een concept: bezoekers kunnen pas boeken na het publiceren."
+        : "De pagina staat offline: bezoekers kunnen nog niet boeken.",
     },
     komend.length ? el("ul", { className: "dag-rijen" }, komend.map(rijEl))
       : leeg({ klein: true, titel: "Geen komende bezoekdagen", tekst: "Plan hieronder een Homerun of een periode in." }),
@@ -165,7 +167,10 @@ export async function toon(paneel, ctx) {
   }
 
   function tekenToevoegen() {
-    const f = dagForm(ctx.pagina);
+    // Bezoekdag uit Monday als voorstel, zolang er nog geen komende dag is.
+    const md = ctx.pagina.monday_bezoekdag;
+    const voorstel = md && md >= vandaagSleutel() && !komendeDagen(ctx.beschikbaarheid).length ? md : null;
+    const f = dagForm(ctx.pagina, null, voorstel);
     const fout = el("p", { className: "form-fout", role: "alert", hidden: true });
     const knop = el("button", { type: "submit", className: "knop zwart klein" }, icoon("plus"), "Bezoekdag toevoegen");
     const form = el("form", { noValidate: true }, f.blok, fout, el("div", { className: "form-acties" }, knop));
@@ -181,14 +186,19 @@ export async function toon(paneel, ctx) {
         await ctx.herlaadBeschikbaarheid();
         tekenLijst();
         tekenToevoegen();
-        toast(ctx.pagina.actief ? "Bezoekdag toegevoegd. Bezoekers kunnen meteen boeken." : "Bezoekdag toegevoegd. De pagina staat nog offline.");
+        toast(ctx.pagina.actief ? "Bezoekdag toegevoegd. Bezoekers kunnen meteen boeken."
+          : ctx.pagina.concept ? "Bezoekdag toegevoegd. Publiceer de pagina bij Overzicht." : "Bezoekdag toegevoegd. De pagina staat nog offline.");
       } catch (err) {
         fout.textContent = foutTekst(err);
         fout.hidden = false;
         knop.disabled = false;
       }
     });
-    toevoegSectie.replaceChildren(sectie({ titel: "Bezoekdag toevoegen", sub: "Een Homerun op één dag, of een periode met vaste weekdagen." }, form));
+    toevoegSectie.replaceChildren(sectie({
+      titel: "Bezoekdag toevoegen",
+      sub: voorstel ? `In Monday staat de bezoekdag op ${datumLang(voorstel)}. Kijk de uren na en voeg toe.`
+        : "Een Homerun op één dag, of een periode met vaste weekdagen.",
+    }, form));
   }
 
   async function wijzigen(r) {
@@ -250,7 +260,8 @@ export async function toon(paneel, ctx) {
     const plaatsen = getalVeld(p.max_per_slot, 1, 50);
     const vooraf = getalVeld(p.min_minuten_vooraf, 0, 10080);
     const fout = el("p", { className: "form-fout", role: "alert", hidden: true });
-    const knop = el("button", { type: "submit", className: "knop zwart klein", disabled: true }, "Bewaren");
+    const knop = el("button", { type: "submit", className: "knop zwart klein", disabled: p.bezoek_ingesteld },
+      p.bezoek_ingesteld ? "Bewaren" : "Bevestigen");
     const velden = { duur_min: duur, slot_interval_min: interval, max_per_slot: plaatsen, min_minuten_vooraf: vooraf };
     const gewijzigd = () => Object.entries(velden).some(([k, i]) => Number(i.value) !== p[k]);
     staat.vuil = gewijzigd;
@@ -261,7 +272,7 @@ export async function toon(paneel, ctx) {
         veld({ label: "Bezoekers per startmoment", input: plaatsen, hulp: "Meer dan 1? Dan zien bezoekers hoeveel plaatsen er nog vrij zijn." }),
         veld({ label: "Minstens zoveel minuten op voorhand boeken", input: vooraf, hulp: "Later boeken kan alleen nog via het beheer." })),
       fout, el("div", { className: "form-acties" }, knop));
-    form.addEventListener("input", () => (knop.disabled = !gewijzigd()));
+    form.addEventListener("input", () => (knop.disabled = p.bezoek_ingesteld && !gewijzigd()));
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const w = Object.fromEntries(Object.entries(velden).map(([k, i]) => [k, Number(i.value)]));
@@ -274,7 +285,7 @@ export async function toon(paneel, ctx) {
       if (melding) return;
       knop.disabled = true;
       try {
-        await ctx.bewaar(w);
+        await ctx.bewaar({ ...w, bezoek_ingesteld: true });
         tekenInstellingen();
         tekenLijst();
         tekenToevoegen();
@@ -287,7 +298,9 @@ export async function toon(paneel, ctx) {
     });
     instellingenSectie.replaceChildren(sectie({
       titel: "Startmomenten",
-      sub: "Geldt voor alle bezoekdagen van dit adres. Bestaande afspraken blijven staan.",
+      sub: p.bezoek_ingesteld ? "Geldt voor alle bezoekdagen van dit adres. Bestaande afspraken blijven staan."
+        : "Nog niet ingesteld voor dit pand: kies hoe lang een bezoek duurt en om de hoeveel minuten, en bevestig.",
+      klasse: p.bezoek_ingesteld ? "" : "let-op",
     }, form));
   }
 

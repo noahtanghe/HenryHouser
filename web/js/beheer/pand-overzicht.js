@@ -7,7 +7,8 @@ import { icoon } from "../iconen.js";
 import { cap, datumKaal, datumLang, el, getal, procent, uur, vandaagSleutel } from "../tekst.js";
 import { komendeDagen } from "./datum.js";
 import { staat } from "./staat.js";
-import { aantal, datumBlad, kopieer, leeg, sectie, tegel } from "./ui.js";
+import { teDoen } from "./pand.js";
+import { aantal, datumBlad, kopieer, leeg, relatief, sectie, tegel, teKoop } from "./ui.js";
 
 const KANAAL_LABEL = { direct: "Rechtstreeks of onbekend", beheer: "Ingevoerd in het beheer" };
 const APPARAAT_LABEL = { mobiel: "Gsm of tablet", desktop: "Computer", onbekend: "Onbekend" };
@@ -16,8 +17,51 @@ const BRONNEN_LINK = [
   ["nieuwsbrief", "Nieuwsbrief"], ["mailing", "Mailing"], ["bord", "QR-code op het bord"], ["website", "Website Henry Houser"],
 ];
 
+// Concept uit Monday: eerst afwerken, dan publiceren.
+function conceptLijst(ctx) {
+  const p = ctx.pagina;
+  const items = teDoen(p, ctx.beschikbaarheid);
+  const open = items.filter((i) => !i.ok && !i.vrij).length;
+  const knop = el("button", { type: "button", className: "knop zwart klein", disabled: open > 0 }, icoon("oog"), "Publiceren");
+  knop.addEventListener("click", async () => {
+    knop.disabled = true;
+    if (await ctx.publiceer()) location.hash = `#/p/${ctx.id}`;
+    else knop.disabled = false;
+  });
+  const dringend = teKoop(p);
+  return sectie({
+    titel: "Klaar om te publiceren?",
+    sub: dringend ? "Dit dossier staat in Monday al op te koop. Werk de pagina af zodat bezoekers kunnen boeken."
+      : "Aangemaakt uit Monday. Bezoekers zien nog dat ze binnenkort een bezoek kunnen inplannen.",
+    klasse: `checklist${dringend ? " dringend" : ""}`,
+  }, el("ul", { className: "check-lijst" }, items.map((i) => el("li", { className: i.ok ? "ok" : "" },
+    el("span", { className: "check-bol", "aria-hidden": "true" }, i.ok ? icoon("vink") : null),
+    i.ok ? el("span", {}, i.tekst, el("span", { className: "sr" }, ", klaar"))
+      : el("a", { href: `#/p/${ctx.id}/${i.tab}` }, i.tekst, i.vrij ? " (aanbevolen)" : "")))),
+  el("div", { className: "publiceer-rij" }, knop,
+    el("span", { className: "klein" }, open ? `Nog ${aantal(open, "punt", "punten")} af te werken.` : "Alles is ingevuld.")));
+}
+
+// Wat Monday over dit dossier weet (alleen-lezen; aanpassen doe je in Monday).
+function mondaySectie(ctx) {
+  const p = ctx.pagina;
+  if (!p.monday_item_id) return "";
+  const g = p.monday_gegevens || {};
+  const rijen = [["Status", p.monday_status], ["Groep", p.monday_groep],
+    ...Object.entries(g).filter(([k]) => !/^status dossier$/i.test(k))];
+  return sectie({
+    titel: "Uit Monday",
+    sub: p.monday_gezien_op ? `Laatst bijgewerkt ${relatief(p.monday_gezien_op)}.` : null,
+  }, el("dl", { className: "monday-gegevens" }, rijen.filter(([, w]) => w).flatMap(([k, w]) => [
+    el("dt", {}, k),
+    el("dd", {}, /^(https?:\/\/|www\.)/i.test(w)
+      ? el("a", { href: /^www\./i.test(w) ? `https://${w}` : w, target: "_blank", rel: "noopener" }, w) : w),
+  ])));
+}
+
 function checklist(ctx) {
   const p = ctx.pagina;
+  if (p.concept && !p.gearchiveerd) return conceptLijst(ctx);
   const items = [
     { ok: !!p.foto_pad, tekst: "Foto toevoegen", tab: "pagina" },
     { ok: komendeDagen(ctx.beschikbaarheid).length > 0, tekst: "Bezoekdag inplannen", tab: "dagen" },
@@ -108,6 +152,7 @@ export async function toon(paneel, ctx) {
   if (geenCijfers) {
     paneel.replaceChildren(
       checklist(ctx) || "",
+      ctx.pagina.concept ? mondaySectie(ctx) : "",
       tegels,
       leeg({
         titel: "Nog geen cijfers",
@@ -171,5 +216,7 @@ export async function toon(paneel, ctx) {
           kleur: "oranje", leeg: "Nog geen weergaven.", tabelKop: "Toestel",
         })),
       sectie({ titel: "Hoe lang op voorhand geboekt?", sub: "Tijd tussen het boeken en het bezoek." },
-        balken({ data: s.doorlooptijd.map((b) => ({ label: b.label, waarde: b.aantal })), leeg: "Nog geen afspraken.", tabelKop: "Op voorhand" }))));
+        balken({ data: s.doorlooptijd.map((b) => ({ label: b.label, waarde: b.aantal })), leeg: "Nog geen afspraken.", tabelKop: "Op voorhand" }))),
+
+    mondaySectie(ctx));
 }

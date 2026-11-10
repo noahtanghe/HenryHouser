@@ -174,6 +174,20 @@ export async function toon(paneel, ctx) {
 
   const zichtbaarSectie = el("div");
   function tekenZichtbaar() {
+    if (ctx.pagina.concept) {
+      const knop = el("button", { type: "button", className: "knop klein zwart" }, "Publiceren");
+      knop.addEventListener("click", async () => {
+        knop.disabled = true;
+        if (await ctx.publiceer()) tekenZichtbaar();
+        else knop.disabled = false;
+      });
+      zichtbaarSectie.replaceChildren(sectie({ titel: "Zichtbaarheid" },
+        el("div", { className: "zichtbaar" },
+          el("span", { className: "badge oranje" }, "Concept"),
+          el("p", {}, "Aangemaakt uit Monday. Bezoekers zien dat ze binnenkort een bezoek kunnen inplannen, maar kunnen nog niet boeken."),
+          knop)));
+      return;
+    }
     const aan = ctx.pagina.actief;
     const knop = el("button", { type: "button", className: `knop klein ${aan ? "lijn" : "zwart"}` }, aan ? "Offline zetten" : "Online zetten");
     knop.addEventListener("click", async () => {

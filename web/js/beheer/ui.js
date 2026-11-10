@@ -380,11 +380,15 @@ export function relatief(iso) {
 /** Status van een adres in het overzicht (rij uit beheer_overzicht). */
 export function statusAdres(p) {
   if (p.gearchiveerd) return { tekst: "Archief", klasse: "kaal" };
+  if (p.concept) return teKoop(p) ? { tekst: "Te koop, nog niet klaar", klasse: "slecht" } : { tekst: "Concept", klasse: "oranje" };
   if (p.fase === "nieuw") return { tekst: p.actief ? "Nog in te plannen" : "Offline", klasse: p.actief ? "aqua" : "slecht" };
   if (p.fase === "afgelopen") return { tekst: "Afgelopen", klasse: "salie" };
   if (!p.actief) return { tekst: "Offline", klasse: "slecht" };
   return p.vrije_slots > 0 ? { tekst: "Online", klasse: "goed" } : { tekst: "Volzet", klasse: "oranje" };
 }
+
+/** Staat het dossier in Monday al op "te koop"? */
+export const teKoop = (p) => /te koop/i.test(p.monday_status || "");
 
 export const badge = ({ tekst, klasse }) => el("span", { className: `badge ${klasse}` }, tekst);
 

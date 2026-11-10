@@ -2,7 +2,7 @@
 // Inloggen via Supabase Auth; wat een beheerder mag, regelt RLS (tabel beheerders).
 // Navigatie via de hash:
 //   #/                  overzicht (dashboard)
-//   #/adressen/<fase>   alle adressen: komend, nieuw, afgelopen, archief, alle
+//   #/adressen/<fase>   alle adressen: concept (uit Monday), komend, nieuw, afgelopen, archief, alle
 //   #/nieuw             nieuw adres (?bron=<id> om een adres te kopiëren)
 //   #/p/<id>/<tab>      één adres: overzicht, bezoekers, dagen, pagina, mails
 //   #/account           wachtwoord wijzigen
