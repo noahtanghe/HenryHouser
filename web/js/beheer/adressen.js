@@ -30,12 +30,18 @@ function periode(van, tot) {
 }
 
 function wanneer(p) {
-  if (p.fase === "concept") return p.monday_bezoekdag ? `Bezoekdag volgens Monday: ${datumLang(p.monday_bezoekdag)}` : "Nog geen bezoekdag in Monday";
-  if (p.fase === "komend") {
+  if (p.fase === "concept" && !p.dagen) return "Nog geen bezoekdag in Monday";
+  if (p.fase === "komend" || p.fase === "concept") {
     return p.dagen === 1 ? `Homerun ${datumLang(p.eerste_dag)}` : `${p.dagen} bezoekdagen, ${kort(p.eerste_dag)} tot ${kort(p.laatste_dag)}`;
   }
   if (p.fase === "nieuw") return "Nog geen bezoekdagen";
   return `Laatste bezoekdag ${metJaar(p.laatste_dag_ooit)}`;
+}
+
+// Concept: wat er nog moet gebeuren voor het gepubliceerd kan worden (zie klaarmaken.js).
+function nogNodig(p) {
+  const open = [!p.dagen ? "bezoekdag" : null, !p.foto_pad ? "foto" : null].filter(Boolean);
+  return open.length ? `Nog nodig: ${open.join(" en ")}` : "Klaar om te publiceren";
 }
 
 function kaart(p) {
@@ -56,7 +62,7 @@ function kaart(p) {
         : null,
       el("p", { className: "adres-cijfers" }, cijfers.join(" · ")),
       p.fase === "nieuw" ? el("span", { className: "adres-actie" }, "Bezoekdag inplannen", icoon("pijlRechts")) : null,
-      p.fase === "concept" ? el("span", { className: "adres-actie" }, "Afwerken en publiceren", icoon("pijlRechts")) : null)));
+      p.fase === "concept" ? el("span", { className: "adres-actie" }, nogNodig(p), icoon("pijlRechts")) : null)));
 }
 
 function tabel(lijst) {

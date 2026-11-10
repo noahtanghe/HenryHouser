@@ -5,9 +5,9 @@ insert into public.paginas (
   slug, titel, adres, intro,
   duur_min, slot_interval_min, max_per_slot, min_minuten_vooraf,
   formuliervelden,
-  afzender, alert_email, eigenaar_email,
+  afzender, alert_email,
   bevestigingsscherm, mail_onderwerp,
-  mail_bevestiging, mail_eigenaar, mail_alert,
+  mail_bevestiging, mail_alert,
   reminder_uren_vooraf, mail_reminder_onderwerp, mail_reminder,
   mail_annulering_onderwerp, mail_annulering, mail_annulering_alert
 ) values (
@@ -29,7 +29,6 @@ insert into public.paginas (
   ]$json$::jsonb,
   'Henry Houser <backoffice@henryhouser.be>',
   'backoffice@henryhouser.be',
-  null,   -- e-mailadres eigenaar nog invullen
   'Hallo {voornaam}! Jouw afspraak ligt vast voor {start}.',
   'bezoek: {adres}',
 
@@ -55,16 +54,6 @@ Tot dan!
 Hendrik Tanghe
 Henry Houser
 0495 56 90 87$txt$,
-
-  -- Melding naar de eigenaar
-  $txt$Hallo,
-
-Er is een nieuw bezoek ingepland voor {adres}:
-
-**{start}**: {voornaam} {familienaam}
-
-Met vriendelijke groeten,
-Henry Houser$txt$,
 
   -- Interne alert
   $txt$Nieuwe boeking voor {adres}.
@@ -112,9 +101,8 @@ insert into public.beschikbaarheid (pagina_id, datum_van, datum_tot, van, tot)
 select id, date '2026-10-11', date '2026-10-11', time '09:00', time '19:00'
 from public.paginas where slug = 'aalbeeksesteenweg57';
 
--- Platform (20261019120000): rapportknop in de eigenaarsmail en tekst bij verplaatsen.
+-- Platform (20261019120000): tekst bij verplaatsen.
 update public.paginas set
-  mail_eigenaar = replace(mail_eigenaar, E'**{start}**: {voornaam} {familienaam}\n', E'**{start}**: {voornaam} {familienaam}\n\nHoeveel interesse er is voor je woning, volg je live via de knop hieronder.\n\n{rapport_knop}\n'),
   mail_verplaatst = $txt$Hallo {voornaam},
 
 Je bezoek aan {adres} is verplaatst naar **{start}**.

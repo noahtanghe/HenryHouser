@@ -67,7 +67,8 @@ export function supabaseApi(cfg) {
       if (bronId) {
         basisRij = ok(await sb.from("paginas").select("*").eq("id", bronId).single());
         for (const k of ["id", "created_at", "updated_at", "slug", "adres", "titel", "foto_pad", "kickoff_prijs",
-          "pand_url", "gearchiveerd", "eigenaar_naam", "eigenaar_email", "rapport_token"]) delete basisRij[k];
+          "pand_url", "gearchiveerd", "rapport_token", "concept", "monday_item_id", "monday_status", "monday_groep",
+          "monday_gegevens", "monday_gezien_op", "monday_bezoekdag", "monday_dag_ingepland", "makelaar"]) delete basisRij[k];
       }
       return ok(await sb.from("paginas").insert({ ...basisRij, ...velden }).select().single());
     },

@@ -622,21 +622,41 @@ body:has(.bewaarbalk:not([hidden])) .toast { bottom: calc(100px + env(safe-area-
 .sectie.checklist { border-left: 4px solid var(--oranje); }
 .sectie.let-op { border-left: 4px solid var(--oranje); }
 .sectie.checklist.dringend { border-left-color: var(--rood); }
-.check-lijst { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-@media (min-width: 560px) { .check-lijst { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 900px) { .check-lijst { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-.check-lijst li {
-  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 12px;
-  background: var(--creme-licht); border: 1px solid var(--lijn-zacht); font-size: 14.5px; line-height: 1.35;
-}
-.check-lijst li.ok { background: none; color: var(--zacht); }
-.check-lijst a { color: var(--inkt); font-weight: 500; text-underline-offset: 3px; }
 .check-bol {
   display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%;
   border: 1.5px solid #b3a684; background: var(--kaart);
 }
-.check-lijst li.ok .check-bol { background: var(--groen); border-color: var(--groen); color: #fff; }
 .check-bol svg { width: 14px; height: 14px; stroke-width: 2.6; }
+
+/* Klaar om te publiceren: elk punt meteen bewerkbaar (klaarmaken.js) */
+.klaar-lijst { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--lijn-zacht); }
+.klaar-punt {
+  display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 4px 14px; align-items: start;
+  padding: 14px 0; border-bottom: 1px solid var(--lijn-zacht);
+}
+.klaar-punt .check-bol { margin-top: 1px; }
+.klaar-punt.ok .check-bol { background: var(--groen); border-color: var(--groen); color: #fff; }
+.klaar-punt.vrij:not(.ok) .check-bol { border-style: dashed; }
+.klaar-punt:not(.ok):not(.vrij) .check-bol { border-color: var(--oranje); }
+.klaar-tekst { display: flex; flex-direction: column; gap: 2px; min-width: 0; line-height: 1.45; }
+.klaar-tekst strong { font-size: 15.5px; font-weight: 600; color: var(--inkt); }
+.klaar-tekst > span { font-size: 14px; color: var(--zacht); }
+.klaar-punt.afwijkend .klaar-tekst > span { color: var(--oranje-tekst); }
+.klaar-acties { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.klaar-acties .mini-boog { width: 30px; height: 38px; }
+.klaar-punt.foto-punt.sleep { background: var(--aqua-zacht); outline: 2px dashed var(--salie); outline-offset: -2px; }
+.klaar-tekst .laad-balk { width: min(260px, 100%); margin-top: 6px; }
+.klaar-dag { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 10px; }
+.klaar-dag-velden { display: grid; grid-template-columns: minmax(150px, 190px) repeat(2, minmax(100px, 130px)) auto; gap: 10px; align-items: end; }
+.klaar-dag .form-fout { margin: 0; }
+@media (max-width: 640px) {
+  .klaar-punt { grid-template-columns: 22px minmax(0, 1fr); }
+  .klaar-acties { grid-column: 2; justify-content: flex-start; margin-top: 6px; }
+  .klaar-dag-velden { grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .klaar-dag-velden .veld:first-child { grid-column: 1 / -1; }
+  .klaar-dag-velden .knop { grid-column: 1 / -1; justify-self: start; }
+}
+.dag-rij-tekst strong .badge { margin-left: 8px; padding: 1px 8px; font-size: 12px; vertical-align: 2px; }
 
 .dag-bezetting { list-style: none; margin: 0; padding: 0; }
 .dag-bezetting li {

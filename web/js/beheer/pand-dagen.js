@@ -5,111 +5,13 @@
 import { meter } from "../grafieken.js";
 import { icoon } from "../iconen.js";
 import { cap, dagSleutel, datumKaal, datumLang, el, getal, uur, vandaagSleutel } from "../tekst.js";
-import { dagenVan, komendeDagen, kortUur, minuten, startmomenten } from "./datum.js";
+import { dagDialoog, dagForm, startmomentenForm } from "./bezoekdag.js";
+import { dagenVan, komendeDagen, kortUur, startmomenten } from "./datum.js";
 import { staat } from "./staat.js";
-import { aantal, bevestig, datumBlad, foutTekst, ikoonKnop, leeg, openDialoog, sectie, segment, toast, veld } from "./ui.js";
+import { aantal, badge, bevestig, datumBlad, foutTekst, ikoonKnop, leeg, sectie, toast } from "./ui.js";
 
 const WD = ["ma", "di", "wo", "do", "vr", "za", "zo"];
-const WD_LANG = ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"];
 const jaarErbij = (d) => (d.slice(0, 4) !== vandaagSleutel().slice(0, 4) ? ` ${d.slice(0, 4)}` : "");
-
-/** Formulier voor één rij beschikbaarheid (nieuw of wijzigen). */
-function dagForm(p, rij = null, voorstel = null) {
-  let soort = rij && rij.datum_van !== rij.datum_tot ? "periode" : "dag";
-  const weekdagen = new Set(rij?.weekdagen || [1, 2, 3, 4, 5, 6, 7]);
-  const dag = el("input", { type: "date", value: rij?.datum_van || voorstel || "" });
-  const vanD = el("input", { type: "date", value: rij?.datum_van || "" });
-  const totD = el("input", { type: "date", value: rij?.datum_tot || "" });
-  const van = el("input", { type: "time", step: 300, value: kortUur(rij?.van || "09:00") });
-  const tot = el("input", { type: "time", step: 300, value: kortUur(rij?.tot || "19:00") });
-  if (!rij) for (const i of [dag, vanD, totD]) i.min = vandaagSleutel();
-
-  const soortRij = el("div", {});
-  const datums = el("div", { className: "datums" });
-  const wdRij = el("div", { className: "weekdagen", role: "group", "aria-label": "Op welke weekdagen" });
-  const voorbeeld = el("div", { className: "starts-voorbeeld", "aria-live": "polite" });
-
-  function teken() {
-    soortRij.replaceChildren(segment({
-      label: "Soort", actief: soort,
-      opties: [{ waarde: "dag", tekst: "Eén dag" }, { waarde: "periode", tekst: "Meerdere dagen" }],
-      opKies: (w) => {
-        soort = w;
-        teken();
-        (soort === "dag" ? dag : vanD).focus();
-      },
-    }));
-    datums.replaceChildren(...(soort === "dag"
-      ? [veld({ label: "Datum", input: dag }), veld({ label: "Van", input: van }), veld({ label: "Tot", input: tot })]
-      : [veld({ label: "Eerste dag", input: vanD }), veld({ label: "Laatste dag", input: totD }),
-        veld({ label: "Van", input: van }), veld({ label: "Tot", input: tot })]));
-    wdRij.hidden = soort === "dag";
-    wdRij.replaceChildren(el("span", { className: "veld-label" }, "Op"), ...WD.map((w, i) => {
-      const k = el("button", { type: "button", className: "wd", "aria-pressed": String(weekdagen.has(i + 1)), "aria-label": WD_LANG[i] }, w);
-      k.addEventListener("click", () => {
-        if (weekdagen.has(i + 1)) weekdagen.delete(i + 1);
-        else weekdagen.add(i + 1);
-        k.setAttribute("aria-pressed", String(weekdagen.has(i + 1)));
-        tekenVoorbeeld();
-      });
-      return k;
-    }));
-    tekenVoorbeeld();
-  }
-
-  function waarden() {
-    const enkel = soort === "dag";
-    return {
-      datum_van: enkel ? dag.value : vanD.value,
-      datum_tot: enkel ? dag.value : totD.value,
-      van: van.value,
-      tot: tot.value,
-      weekdagen: enkel ? [1, 2, 3, 4, 5, 6, 7] : [...weekdagen].sort(),
-    };
-  }
-
-  function controle() {
-    const w = waarden();
-    if (!w.datum_van) return soort === "dag" ? "Kies een datum." : "Kies de eerste dag.";
-    if (!w.datum_tot) return "Kies de laatste dag.";
-    if (w.datum_tot < w.datum_van) return "De laatste dag ligt voor de eerste.";
-    if (!w.weekdagen.length) return "Kies minstens één weekdag.";
-    if (!w.van || !w.tot || w.tot <= w.van) return "Het einduur moet na het beginuur liggen.";
-    if (!startmomenten(w.van, w.tot, p.duur_min, p.slot_interval_min).length) {
-      return `Tussen ${w.van} en ${w.tot} past geen bezoek van ${p.duur_min} minuten.`;
-    }
-    if (!dagenVan(w).length) return "In deze periode valt geen enkele van de gekozen weekdagen.";
-    return null;
-  }
-
-  function tekenVoorbeeld() {
-    const w = waarden();
-    const starts = w.van && w.tot ? startmomenten(w.van, w.tot, p.duur_min, p.slot_interval_min) : [];
-    const n = w.datum_van && w.datum_tot && w.datum_tot >= w.datum_van ? dagenVan(w).length : soort === "dag" ? 1 : 0;
-    if (!starts.length) {
-      voorbeeld.replaceChildren(el("p", { className: "klein" }, "Kies de uren om de startmomenten te zien."));
-      return;
-    }
-    voorbeeld.replaceChildren(
-      el("p", { className: "klein" },
-        `${aantal(starts.length, "startmoment", "startmomenten")}${n > 1 ? ` per dag, ${aantal(n, "dag", "dagen")}` : ""}`,
-        ` · ${aantal(starts.length * Math.max(1, n) * p.max_per_slot, "plaats", "plaatsen")} in totaal. Laatste start om ${starts.at(-1)}, bezoek tot ${alsEind(starts.at(-1), p.duur_min)}.`),
-      el("ul", { className: "starts" }, starts.map((s) => el("li", {}, s))));
-  }
-
-  for (const i of [dag, vanD, totD, van, tot]) i.addEventListener("input", tekenVoorbeeld);
-  teken();
-  return {
-    blok: el("div", { className: "dag-form" }, soortRij, datums, wdRij, voorbeeld),
-    waarden, controle,
-    focus: () => (soort === "dag" ? dag : vanD).focus(),
-  };
-}
-
-function alsEind(start, duur) {
-  const m = minuten(start) + duur;
-  return `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-}
 
 export async function toon(paneel, ctx) {
   const lijstSectie = el("div");
@@ -139,7 +41,7 @@ export async function toon(paneel, ctx) {
     return el("li", { className: "dag-rij" },
       datumBlad(r.datum_van),
       el("div", { className: "dag-rij-tekst" },
-        el("strong", {}, wanneer),
+        el("strong", {}, wanneer, r.uit_monday ? badge({ tekst: "uit Monday", klasse: "kaal" }) : null),
         el("span", {}, [`${kortUur(r.van)} tot ${kortUur(r.tot)}`, wd, enkel ? null : aantal(t.dagen.length, "dag", "dagen")].filter(Boolean).join(" · "))),
       el("div", { className: "dag-rij-cijfers" },
         el("span", {}, `${aantal(t.starts.length, "startmoment", "startmomenten")}${enkel ? "" : " per dag"}`),
@@ -202,34 +104,7 @@ export async function toon(paneel, ctx) {
   }
 
   async function wijzigen(r) {
-    const f = dagForm(ctx.pagina, r);
-    const fout = el("p", { className: "form-fout", role: "alert", hidden: true });
-    const knop = el("button", { type: "button", className: "knop zwart klein" }, "Bewaren");
-    const annuleer = el("button", { type: "button", className: "knop lijn klein" }, "Annuleren");
-    const { sluit } = openDialoog({
-      titel: "Bezoekdag wijzigen", breed: true,
-      inhoud: [f.blok, el("p", { className: "klein" }, "Bestaande afspraken blijven staan, ook als ze buiten de nieuwe uren vallen."), fout],
-      voet: [annuleer, knop],
-    });
-    annuleer.addEventListener("click", () => sluit());
-    knop.addEventListener("click", async () => {
-      const melding = f.controle();
-      fout.textContent = melding || "";
-      fout.hidden = !melding;
-      if (melding) return;
-      knop.disabled = true;
-      try {
-        await staat.api.beschikbaarheidWijzigen(r.id, f.waarden());
-        await ctx.herlaadBeschikbaarheid();
-        sluit();
-        tekenLijst();
-        toast("Bezoekdag gewijzigd.");
-      } catch (err) {
-        fout.textContent = foutTekst(err);
-        fout.hidden = false;
-        knop.disabled = false;
-      }
-    });
+    if (await dagDialoog(ctx, { rij: r })) tekenLijst();
   }
 
   async function verwijderen(r, t) {
@@ -253,54 +128,17 @@ export async function toon(paneel, ctx) {
   }
 
   function tekenInstellingen() {
-    const p = ctx.pagina;
-    const getalVeld = (waarde, min, max) => el("input", { type: "number", inputMode: "numeric", min, max, step: 1, value: waarde });
-    const duur = getalVeld(p.duur_min, 5, 480);
-    const interval = getalVeld(p.slot_interval_min, 5, 480);
-    const plaatsen = getalVeld(p.max_per_slot, 1, 50);
-    const vooraf = getalVeld(p.min_minuten_vooraf, 0, 10080);
-    const fout = el("p", { className: "form-fout", role: "alert", hidden: true });
-    const knop = el("button", { type: "submit", className: "knop zwart klein", disabled: p.bezoek_ingesteld },
-      p.bezoek_ingesteld ? "Bewaren" : "Bevestigen");
-    const velden = { duur_min: duur, slot_interval_min: interval, max_per_slot: plaatsen, min_minuten_vooraf: vooraf };
-    const gewijzigd = () => Object.entries(velden).some(([k, i]) => Number(i.value) !== p[k]);
-    staat.vuil = gewijzigd;
-    const form = el("form", { noValidate: true },
-      el("div", { className: "velden twee" },
-        veld({ label: "Duur van een bezoek (minuten)", input: duur, hulp: "Bepaalt het laatste startmoment en de lengte van de agenda-afspraak." }),
-        veld({ label: "Om de hoeveel minuten een startmoment", input: interval, hulp: "Gelijk aan de duur: bezoeken volgen elkaar op zonder overlap." }),
-        veld({ label: "Bezoekers per startmoment", input: plaatsen, hulp: "Meer dan 1? Dan zien bezoekers hoeveel plaatsen er nog vrij zijn." }),
-        veld({ label: "Minstens zoveel minuten op voorhand boeken", input: vooraf, hulp: "Later boeken kan alleen nog via het beheer." })),
-      fout, el("div", { className: "form-acties" }, knop));
-    form.addEventListener("input", () => (knop.disabled = p.bezoek_ingesteld && !gewijzigd()));
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const w = Object.fromEntries(Object.entries(velden).map(([k, i]) => [k, Number(i.value)]));
-      const melding = !(w.duur_min >= 5 && w.duur_min <= 480) ? "Een bezoek duurt tussen 5 en 480 minuten."
-        : !(w.slot_interval_min >= 5 && w.slot_interval_min <= 480) ? "Kies tussen 5 en 480 minuten tussen de startmomenten."
-        : !(w.max_per_slot >= 1 && Number.isInteger(w.max_per_slot)) ? "Minstens 1 bezoeker per startmoment."
-        : !(w.min_minuten_vooraf >= 0) ? "Vul 0 of meer minuten in." : null;
-      fout.textContent = melding || "";
-      fout.hidden = !melding;
-      if (melding) return;
-      knop.disabled = true;
-      try {
-        await ctx.bewaar({ ...w, bezoek_ingesteld: true });
+    const { form, gewijzigd } = startmomentenForm(ctx, {
+      opBewaard: () => {
         tekenInstellingen();
         tekenLijst();
         tekenToevoegen();
-        toast("Bewaard. De startmomenten zijn aangepast.");
-      } catch (err) {
-        fout.textContent = foutTekst(err);
-        fout.hidden = false;
-        knop.disabled = false;
-      }
+      },
     });
+    staat.vuil = gewijzigd;
     instellingenSectie.replaceChildren(sectie({
       titel: "Startmomenten",
-      sub: p.bezoek_ingesteld ? "Geldt voor alle bezoekdagen van dit adres. Bestaande afspraken blijven staan."
-        : "Nog niet ingesteld voor dit pand: kies hoe lang een bezoek duurt en om de hoeveel minuten, en bevestig.",
-      klasse: p.bezoek_ingesteld ? "" : "let-op",
+      sub: "Standaard bezoeken van 40 minuten, om de 40 minuten. Geldt voor alle bezoekdagen van dit adres; bestaande afspraken blijven staan.",
     }, form));
   }
 
