@@ -6,9 +6,10 @@ import { meter } from "../grafieken.js";
 import { boogFoto } from "../kader.js";
 import { datumKaal, datumLang, el, getal, procent, splitsAdres } from "../tekst.js";
 import { staat } from "./staat.js";
-import { aantal, badge, leeg, paginaKop, segment, statusAdres } from "./ui.js";
+import { aantal, badge, foutTekst, leeg, paginaKop, relatief, segment, statusAdres, toast } from "./ui.js";
 
 const FASEN = [
+  { waarde: "concept", tekst: "Klaar te maken" },
   { waarde: "komend", tekst: "Komend" },
   { waarde: "nieuw", tekst: "Nog in te plannen" },
   { waarde: "afgelopen", tekst: "Afgelopen" },
@@ -29,6 +30,7 @@ function periode(van, tot) {
 }
 
 function wanneer(p) {
+  if (p.fase === "concept") return p.monday_bezoekdag ? `Bezoekdag volgens Monday: ${datumLang(p.monday_bezoekdag)}` : "Nog geen bezoekdag in Monday";
   if (p.fase === "komend") {
     return p.dagen === 1 ? `Homerun ${datumLang(p.eerste_dag)}` : `${p.dagen} bezoekdagen, ${kort(p.eerste_dag)} tot ${kort(p.laatste_dag)}`;
   }
@@ -53,7 +55,8 @@ function kaart(p) {
           el("span", {}, `${getal(p.geboekt)} van ${getal(p.capaciteit)} geboekt`))
         : null,
       el("p", { className: "adres-cijfers" }, cijfers.join(" · ")),
-      p.fase === "nieuw" ? el("span", { className: "adres-actie" }, "Bezoekdag inplannen", icoon("pijlRechts")) : null)));
+      p.fase === "nieuw" ? el("span", { className: "adres-actie" }, "Bezoekdag inplannen", icoon("pijlRechts")) : null,
+      p.fase === "concept" ? el("span", { className: "adres-actie" }, "Afwerken en publiceren", icoon("pijlRechts")) : null)));
 }
 
 function tabel(lijst) {
@@ -101,6 +104,7 @@ function leegToestand(fase, q, lijst) {
     });
   }
   const teksten = {
+    concept: ["Niets klaar te maken", "Een dossier in Monday met een url website krijgt hier automatisch een pagina."],
     komend: ["Geen komende Homeruns", "Plan een bezoekdag in bij een adres, of maak een nieuw adres aan."],
     nieuw: ["Alles is ingepland", "Elk adres heeft minstens één bezoekdag."],
     afgelopen: ["Nog geen afgelopen adressen", "Na de laatste bezoekdag verschijnt een adres hier, met alle afspraken en cijfers."],
@@ -114,6 +118,33 @@ function leegToestand(fase, q, lijst) {
 }
 
 const past = (p, q) => `${p.adres} ${p.titel} ${p.slug}`.toLowerCase().includes(q);
+
+// Wanneer is Monday laatst gelezen, en meteen opnieuw lezen.
+function mondayBlok() {
+  const info = el("span", { className: "klein monday-info" });
+  const knop = el("button", { type: "button", className: "knop lijn klein" }, icoon("vernieuw"), "Monday bijwerken");
+  const zet = (m) => {
+    if (!m?.geprobeerd_op) info.textContent = "Nog niet gelezen uit Monday.";
+    else if (m.fout) info.replaceChildren(el("span", { className: "fout-tekst" }, `Monday: ${m.fout}`));
+    else info.textContent = `Monday gelezen ${relatief(m.gelukt_op)}`;
+  };
+  staat.api.mondayStatus().then(zet).catch(() => info.remove());
+  knop.addEventListener("click", async () => {
+    knop.disabled = true;
+    try {
+      const r = await staat.api.mondayBijwerken();
+      toast(r.nieuw ? `${aantal(r.nieuw, "nieuwe pagina", "nieuwe pagina's")} uit Monday.` : "Bijgewerkt. Geen nieuwe dossiers.");
+      if (r.nieuw) location.hash = "#/adressen/concept";
+      else zet(await staat.api.mondayStatus());
+    } catch (err) {
+      toast(foutTekst(err), { fout: true });
+      zet(await staat.api.mondayStatus().catch(() => null));
+    } finally {
+      knop.disabled = false;
+    }
+  });
+  return el("div", { className: "monday-blok" }, info, knop);
+}
 
 export async function toon(container, fase) {
   const mijn = staat.navigatie;
@@ -132,7 +163,7 @@ export async function toon(container, fase) {
     const q = zoekterm.trim().toLowerCase();
     const binnen = lijst.filter((p) => (fase === "alle" || p.fase === fase) && (!q || past(p, q)));
     resultaat.replaceChildren(!binnen.length ? leegToestand(fase, q, lijst)
-      : fase === "komend" || fase === "nieuw" ? el("ul", { className: "adres-kaarten" }, binnen.map(kaart))
+      : ["concept", "komend", "nieuw"].includes(fase) ? el("ul", { className: "adres-kaarten" }, binnen.map(kaart))
       : tabel(binnen));
   };
   zoek.addEventListener("input", () => {
@@ -145,6 +176,7 @@ export async function toon(container, fase) {
     paginaKop({
       titel: "Adressen",
       sub: el("p", {}, `${aantal(lijst.length, "adres", "adressen")}${komend ? `, waarvan ${getal(komend)} met komende bezoekdagen` : ""}.`),
+      acties: mondayBlok(),
     }),
     el("div", { className: "werkbalk" },
       segment({

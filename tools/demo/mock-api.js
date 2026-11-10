@@ -100,6 +100,8 @@
       afzender: T.afzender || "Henry Houser <backoffice@henryhouser.be>", antwoord_aan: null,
       alert_email: T.alert_email || "backoffice@henryhouser.be", eigenaar_email: null, eigenaar_naam: null,
       foto_pad: null, kickoff_prijs: null, pand_url: null, rapport_token: uuid(),
+      concept: false, bezoek_ingesteld: true, monday_item_id: null, monday_status: null, monday_groep: null,
+      monday_gegevens: null, monday_gezien_op: null, monday_bezoekdag: null, makelaar: null,
       created_at: gemaakt, updated_at: gemaakt,
       ...kopie(TEKSTEN), ...v,
     };
@@ -140,7 +142,25 @@
       actief: false, gearchiveerd: true, eigenaar_naam: "familie Proef", eigenaar_email: "verkoper3@voorbeeld.be",
       created_at: lokaal(plus(HR_OEFEN, -18), "11:00"),
     }),
+    // Concepten uit Monday (zie supabase/functions/monday): nog af te werken in het beheer.
+    nieuwePagina({
+      id: "mondaylaan", slug: "mondaylaan5", adres: "Mondaylaan 5, 8500 Kortrijk", kickoff_prijs: 365000,
+      pand_url: "https://www.mondaylaan5.be", eigenaar_naam: "familie Monday", actief: false, concept: true, bezoek_ingesteld: false,
+      monday_item_id: 1001, monday_status: "te koop", monday_groep: "actief te koop", makelaar: "Hendrik",
+      monday_bezoekdag: plus(VANDAAG, 5), monday_gezien_op: iso(NU - 6 * 60e3),
+      monday_gegevens: { "Naam klant": "familie Monday", "url website": "www.mondaylaan5.be", Homerun: "zaterdag", "Kick-Off prijs": "365000", "EPC": "ontvangen", "HH-nummer": "HH0001" },
+      created_at: lokaal(VANDAAG, "08:10"),
+    }),
+    nieuwePagina({
+      id: "conceptstraat", slug: "conceptstraat12", adres: "Conceptstraat 12, 8520 Kuurne",
+      pand_url: "https://www.conceptstraat12.be", eigenaar_naam: "Mevrouw Concept", actief: false, concept: true, bezoek_ingesteld: false,
+      monday_item_id: 1002, monday_status: "in voorbereiding", monday_groep: "In voorbereiding", makelaar: "Hendrik",
+      monday_bezoekdag: plus(VANDAAG, 26), monday_gezien_op: iso(NU - 6 * 60e3),
+      monday_gegevens: { "Naam klant": "Mevrouw Concept", "url website": "www.conceptstraat12.be", "Fotografie & 360°": "in te plannen", "HH-nummer": "HH0002" },
+      created_at: lokaal(VANDAAG, "08:10"),
+    }),
   ];
+  const mondaySync = { id: 1, geprobeerd_op: iso(NU - 6 * 60e3), gelukt_op: iso(NU - 6 * 60e3), fout: null, dossiers: 609, nieuw: 0 };
 
   const beschikbaarheid = [
     { id: "b-aalbeek", pagina_id: "aalbeek", datum_van: HR, datum_tot: HR, van: "09:00:00", tot: "19:00:00", weekdagen: [1, 2, 3, 4, 5, 6, 7] },
@@ -408,7 +428,9 @@
         geboekt: bk.filter((b) => b.status !== "geannuleerd").length,
         geannuleerd: bk.filter((b) => b.status === "geannuleerd").length,
         weergaven: weergaven.filter((w) => w.pagina_id === p.id && w.gebeurtenis === "bekeken").length,
-        fase: p.gearchiveerd ? "archief" : dagen > 0 ? "komend" : !alle.length ? "nieuw" : "afgelopen",
+        fase: p.gearchiveerd ? "archief" : p.concept ? "concept" : dagen > 0 ? "komend" : !alle.length ? "nieuw" : "afgelopen",
+        concept: p.concept, monday_status: p.monday_status, monday_groep: p.monday_groep,
+        monday_bezoekdag: p.monday_bezoekdag, makelaar: p.makelaar, created_at: p.created_at,
         _created: p.created_at,
       };
     });
@@ -467,10 +489,12 @@
           return { boeking_id: m.boeking_id, pagina_id: b.pagina_id, adres: adres(b.pagina_id), soort: m.soort, ontvanger: m.ontvanger, fout: m.fout, gepland_op: m.gepland_op };
         }),
         vastgelopen: 0,
-        zonder_data: actief.filter((p) => !beschikbaarheid.some((r) => r.pagina_id === p.id))
+        concepten: actief.filter((p) => p.concept).map((p) => ({ id: p.id, adres: p.adres, monday_status: p.monday_status, te_koop: /te koop/i.test(p.monday_status || "") })),
+        monday_fout: mondaySync.fout,
+        zonder_data: actief.filter((p) => !p.concept).filter((p) => !beschikbaarheid.some((r) => r.pagina_id === p.id))
           .sort((a, b) => b.created_at.localeCompare(a.created_at)).map((p) => ({ id: p.id, adres: p.adres })),
-        zonder_eigenaar: actief.filter((p) => !(p.eigenaar_email || "").trim() && metToekomst(p)).map((p) => ({ id: p.id, adres: p.adres })),
-        zonder_foto: actief.filter((p) => !p.foto_pad && metToekomst(p)).map((p) => ({ id: p.id, adres: p.adres })),
+        zonder_eigenaar: actief.filter((p) => !p.concept && !(p.eigenaar_email || "").trim() && metToekomst(p)).map((p) => ({ id: p.id, adres: p.adres })),
+        zonder_foto: actief.filter((p) => !p.concept && !p.foto_pad && metToekomst(p)).map((p) => ({ id: p.id, adres: p.adres })),
       },
     };
   }
@@ -493,6 +517,8 @@
 
   // Zoals pagina_publiek: alleen actieve pagina's
   function publiekePagina(slug) {
+    const c = paginas.find((x) => x.slug === slug && !x.actief && x.concept && !x.gearchiveerd);
+    if (c) return { slug: c.slug, titel: c.titel, adres: c.adres, foto_pad: c.foto_pad, pand_url: c.pand_url, concept: true };
     const p = paginas.find((x) => x.slug === slug && x.actief);
     if (!p) return null;
     return {
@@ -666,6 +692,13 @@
     async dashboard() { await wacht(); return kopie(dashboard()); },
     async overzicht() { await wacht(); return kopie(overzicht()); },
     async statistiek(id) { await wacht(); return kopie(statistiek(id)); },
+    async mondayStatus() { await wacht(); return kopie(mondaySync); },
+    async mondayBijwerken() {
+      await wacht(900);
+      Object.assign(mondaySync, { geprobeerd_op: iso(Date.now()), gelukt_op: iso(Date.now()), nieuw: 0 });
+      for (const p of paginas) if (p.monday_item_id) p.monday_gezien_op = iso(Date.now());
+      return { dossiers: 609, nieuw: 0, gekoppeld: 0, bijgewerkt: 2 };
+    },
 
     async pagina(id) {
       await wacht();

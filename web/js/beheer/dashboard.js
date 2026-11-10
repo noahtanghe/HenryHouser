@@ -108,6 +108,16 @@ function aandacht(a) {
       tekst: "Ze worden automatisch opnieuw geprobeerd.",
     });
   }
+  if (a.monday_fout) {
+    items.push({ href: "#/adressen/concept", titel: "Monday kon niet gelezen worden", tekst: a.monday_fout });
+  }
+  for (const p of a.concepten || []) {
+    items.push({
+      href: `#/p/${p.id}`,
+      titel: p.te_koop ? `${straatVan(p.adres)}: te koop, maar nog niet gepubliceerd` : `${straatVan(p.adres)}: nieuw uit Monday`,
+      tekst: "Vul bezoekduur, foto en bezoekdag aan en publiceer de pagina.",
+    });
+  }
   for (const p of a.zonder_data) {
     items.push({ href: `#/p/${p.id}/dagen`, titel: `${straatVan(p.adres)}: nog geen bezoekdagen`, tekst: "Plan een Homerun in." });
   }

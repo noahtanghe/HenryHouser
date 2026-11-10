@@ -514,9 +514,14 @@ async function start() {
   }
   try {
     const [p, s] = await Promise.all([api.pagina(slug), api.slots(slug).catch(() => [])]);
-    if (!p) {
+    if (!p || p.concept) {
       // In het voorbeeld kan de pagina offline staan: het beheer stuurt de inhoud zelf door.
       if (voorbeeld) return;
+      // Concept uit Monday: de link staat al op de pandsite, de bezoekdagen nog niet.
+      if (p) {
+        return nietGevonden(`Bezoeken ${p.adres.split(",")[0]}`,
+          "Binnenkort kan je hier een bezoek inplannen. Kom later nog eens terug, of neem contact met ons op als je niet wil wachten.");
+      }
       return nietGevonden("Deze pagina bestaat niet (meer)",
         "Misschien is het pand intussen verkocht of is de link veranderd. Bekijk ons actuele aanbod, of neem contact met ons op.");
     }

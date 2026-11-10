@@ -12,7 +12,7 @@ import * as mails from "./pand-mails.js";
 import * as overzicht from "./pand-overzicht.js";
 import * as pagina from "./pand-pagina.js";
 import { staat } from "./staat.js";
-import { actiefInBeeld, badge, bevestig, foutTekst, kopieer, laadBlok, menuKnop, openDialoog, toast } from "./ui.js";
+import { actiefInBeeld, badge, bevestig, foutTekst, kopieer, laadBlok, menuKnop, openDialoog, teKoop, toast } from "./ui.js";
 
 const TABS = [
   { naam: "overzicht", tekst: "Overzicht", module: overzicht },
@@ -33,14 +33,27 @@ const nuKomend = (b) => b.status === "bevestigd" && new Date(b.start) >= Date.no
 
 export function statusPand(p, beschikbaarheid) {
   if (p.gearchiveerd) return { tekst: "Archief", klasse: "kaal" };
+  if (p.concept) return teKoop(p) ? { tekst: "Te koop, nog niet klaar", klasse: "slecht" } : { tekst: "Concept", klasse: "oranje" };
   if (!p.actief) return { tekst: "Offline", klasse: "slecht" };
   if (!beschikbaarheid.length) return { tekst: "Nog in te plannen", klasse: "aqua" };
   if (komendeDagen(beschikbaarheid).length) return { tekst: "Online", klasse: "goed" };
   return { tekst: "Afgelopen", klasse: "salie" };
 }
 
+/** Wat een concept uit Monday nog nodig heeft voor het gepubliceerd kan worden. */
+export function teDoen(p, beschikbaarheid) {
+  return [
+    { ok: p.bezoek_ingesteld, tekst: "Bezoekduur en interval instellen", tab: "dagen" },
+    { ok: !!p.foto_pad, tekst: "Foto toevoegen", tab: "pagina" },
+    { ok: komendeDagen(beschikbaarheid).length > 0, tekst: "Bezoekdag inplannen", tab: "dagen" },
+    // Niet verplicht: Monday kent het e-mailadres niet, en zonder krijgt de verkoper gewoon geen meldingen.
+    { ok: !!(p.eigenaar_email || "").trim(), tekst: "E-mailadres van de verkoper", tab: "mails", vrij: true },
+  ];
+}
+
 function fase() {
   if (h.pagina.gearchiveerd) return "archief";
+  if (h.pagina.concept) return "concept";
   if (!h.beschikbaarheid.length) return "nieuw";
   return komendeDagen(h.beschikbaarheid).length ? "komend" : "afgelopen";
 }
@@ -52,6 +65,7 @@ export const ctx = {
   get boekingen() { return h.boekingen; },
   get beschikbaarheid() { return h.beschikbaarheid; },
   fase,
+  publiceer,
   async bewaar(velden) {
     h.pagina = await staat.api.paginaBewaren(h.id, velden);
     tekenKop();
@@ -133,7 +147,9 @@ function menuItems() {
   const p = h.pagina;
   const metAfspraken = h.boekingen.length > 0;
   return [
-    p.actief
+    p.concept
+      ? { tekst: "Publiceren", icoon: "oog", actie: publiceer }
+      : p.actief
       ? { tekst: "Pagina offline zetten", icoon: "slot", actie: () => zetOnline(false) }
       : { tekst: "Pagina online zetten", icoon: "oog", actie: () => zetOnline(true) },
     { tekst: "Kopiëren naar een nieuw adres", icoon: "kopie", href: `#/nieuw?bron=${p.id}` },
@@ -159,6 +175,29 @@ async function zetOnline(aan) {
     toast(aan ? "De pagina staat online." : "De pagina staat offline. Bezoekers zien een melding.");
   } catch (err) {
     toast(foutTekst(err), { fout: true });
+  }
+}
+
+async function publiceer() {
+  const open = teDoen(h.pagina, h.beschikbaarheid).filter((i) => !i.ok && !i.vrij);
+  if (open.length) {
+    toast(`Nog niet klaar: ${open.map((i) => i.tekst.toLowerCase()).join(", ")}.`, { fout: true });
+    return false;
+  }
+  const dagen = komendeDagen(h.beschikbaarheid);
+  if (!(await bevestig({
+    titel: "Pagina publiceren?",
+    tekst: `Bezoekers kunnen meteen boeken: ${dagen.length === 1 ? `Homerun ${datumLang(dagen[0])}` : `${dagen.length} bezoekdagen vanaf ${datumKaal(dagen[0])}`}, bezoeken van ${h.pagina.duur_min} minuten, om de ${h.pagina.slot_interval_min} minuten een startmoment.`,
+    ja: "Publiceren",
+  }))) return false;
+  try {
+    await ctx.bewaar({ concept: false, actief: true, gearchiveerd: false });
+    tekenTabs();
+    toast("Gepubliceerd. Bezoekers kunnen nu boeken.");
+    return true;
+  } catch (err) {
+    toast(foutTekst(err), { fout: true });
+    return false;
   }
 }
 

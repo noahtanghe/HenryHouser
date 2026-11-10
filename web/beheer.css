@@ -620,6 +620,8 @@ body:has(.bewaarbalk:not([hidden])) .toast { bottom: calc(100px + env(safe-area-
 
 /* Overzicht van een adres */
 .sectie.checklist { border-left: 4px solid var(--oranje); }
+.sectie.let-op { border-left: 4px solid var(--oranje); }
+.sectie.checklist.dringend { border-left-color: var(--rood); }
 .check-lijst { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 @media (min-width: 560px) { .check-lijst { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 900px) { .check-lijst { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -983,3 +985,11 @@ body:has(.bewaarbalk:not([hidden])) .toast { bottom: calc(100px + env(safe-area-
   .printlijst tr { break-inside: avoid; }
   .printlijst .vakje { text-align: center; font-size: 13pt; }
 }
+
+/* Monday: wanneer laatst gelezen, met knop om meteen bij te werken */
+.monday-blok { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.monday-info .fout-tekst { color: var(--rood); }
+.monday-gegevens { display: grid; grid-template-columns: minmax(110px, auto) 1fr; gap: 6px 16px; margin: 0; font-size: 14px; }
+.monday-gegevens dt { color: var(--vaag); }
+.monday-gegevens dd { margin: 0; overflow-wrap: anywhere; }
+.publiceer-rij { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 14px; }
