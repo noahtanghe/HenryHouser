@@ -1,4 +1,4 @@
-// Mails van één adres: wie krijgt welke mail (kantoor, verkoper, herinnering) en de tekst van
+// Mails van één adres: wie krijgt welke mail (bezoeker, kantoor, herinnering) en de tekst van
 // elke mail, met ernaast een voorbeeld zoals de ontvanger het ziet.
 
 import { icoon } from "../iconen.js";
@@ -13,21 +13,19 @@ const MAILS = [
   { soort: "reminder", titel: "Herinnering", aan: "Bezoeker", wanneer: "Voor het bezoek, zoveel uur op voorhand als je bij Ontvangers kiest.", onderwerp: "mail_reminder_onderwerp", tekst: "mail_reminder" },
   { soort: "verplaatst", titel: "Nieuw tijdstip", aan: "Bezoeker", wanneer: "Als je een afspraak verplaatst in het beheer.", onderwerp: "mail_verplaatst_onderwerp", tekst: "mail_verplaatst" },
   { soort: "annulering", titel: "Annulering", aan: "Bezoeker", wanneer: "Als de bezoeker annuleert, of jij in het beheer.", onderwerp: "mail_annulering_onderwerp", tekst: "mail_annulering" },
-  { soort: "eigenaar", titel: "Melding aan de verkoper", aan: "Verkoper", wanneer: "Bij elke nieuwe afspraak, als het e-mailadres van de verkoper ingevuld is.", tekst: "mail_eigenaar" },
   { soort: "alert", titel: "Interne melding", aan: "Kantoor", wanneer: "Bij elke nieuwe boeking via de pagina.", tekst: "mail_alert" },
   { soort: "annulering_alert", titel: "Interne melding bij annulering", aan: "Kantoor", wanneer: "Als een bezoek geannuleerd wordt.", tekst: "mail_annulering_alert" },
 ];
-const ONTVANGERS = ["alert_email", "eigenaar_naam", "eigenaar_email", "antwoord_aan", "reminder_uren_vooraf"];
+const ONTVANGERS = ["alert_email", "antwoord_aan", "reminder_uren_vooraf"];
 const VELDEN = [...ONTVANGERS, ...new Set(MAILS.flatMap((m) => [m.onderwerp, m.tekst].filter(Boolean)))];
 
 const PLAATSHOUDERS = [
   ["{voornaam}", "Voornaam van de bezoeker"], ["{familienaam}", "Familienaam van de bezoeker"],
   ["{start}", "zaterdag 31 oktober 2026 om 09:40"], ["{datum}", "zaterdag 31 oktober"], ["{start_uur}", "09:40"],
-  ["{adres}", "Het adres"], ["{titel}", "De titel"], ["{kickoff_prijs}", "375.000 euro"], ["{eigenaar_naam}", "Naam van de verkoper"],
+  ["{adres}", "Het adres"], ["{titel}", "De titel"], ["{kickoff_prijs}", "375.000 euro"],
 ];
 const BLOKKEN = {
   bezoeker: [["{agenda_knoppen}", "Knoppen om het bezoek in de agenda te zetten"], ["{annuleer_knop}", "Knop om te annuleren"]],
-  eigenaar: [["{rapport_knop}", "Knop naar het verkopersrapport"]],
   intern: [["{gegevens}", "Alle antwoorden uit het formulier"]],
 };
 
@@ -99,9 +97,6 @@ export async function toon(paneel, ctx) {
     ontvangersSectie.replaceChildren(sectie({ titel: "Ontvangers", sub: `Afzender: ${ctx.pagina.afzender || "Henry Houser <backoffice@henryhouser.be>"}` },
       el("div", { className: "velden" },
         veld({ label: "Interne melding naar", input: invoer("alert_email", { placeholder: "backoffice@henryhouser.be" }), hulp: "Bij elke nieuwe boeking en elke annulering. Meerdere adressen scheiden met een komma." }),
-        el("div", { className: "rij2" },
-          veld({ label: "Naam van de verkoper", input: invoer("eigenaar_naam", { placeholder: "bv. familie Declercq" }), hulp: "Voor de aanspreking in het verkopersrapport." }),
-          veld({ label: "E-mail van de verkoper", input: invoer("eigenaar_email", { type: "email" }), hulp: "Krijgt een melding bij elke nieuwe afspraak, met de link naar het verkopersrapport. Leeg = geen melding." })),
         veld({ label: "Antwoorden van bezoekers gaan naar", input: invoer("antwoord_aan", { type: "email" }), hulp: "Leeg = naar de afzender." }),
         el("div", { className: "veld" },
           el("label", { for: "herinnering" }, "Herinnering naar de bezoeker"),
@@ -154,7 +149,7 @@ export async function toon(paneel, ctx) {
         gewijzigd();
       });
     }
-    const blokken = NAAR_BEZOEKER.includes(m.soort) ? BLOKKEN.bezoeker : m.soort === "eigenaar" ? BLOKKEN.eigenaar : BLOKKEN.intern;
+    const blokken = NAAR_BEZOEKER.includes(m.soort) ? BLOKKEN.bezoeker : BLOKKEN.intern;
 
     tekstenSectie.replaceChildren(sectie({
       titel: "Teksten", sub: "Lege regel = nieuwe alinea, **tussen sterretjes** = vet. Een blok zoals {agenda_knoppen} zet je op een eigen regel.",
@@ -192,7 +187,6 @@ export async function toon(paneel, ctx) {
       logo: api.logoUrl,
     });
     const aan = m.aan === "Bezoeker" ? `${voorbeeldBoeking.voornaam} ${voorbeeldBoeking.familienaam} (voorbeeld)`
-      : m.aan === "Verkoper" ? (p.eigenaar_email || "Nog geen e-mailadres van de verkoper")
       : (p.alert_email || "Nog geen adres ingevuld");
     aanRegel.replaceChildren(el("span", { className: "label" }, "Aan"), aan);
     onderwerpRegel.replaceChildren(el("span", { className: "label" }, "Onderwerp"), v.onderwerp);
@@ -208,7 +202,6 @@ export async function toon(paneel, ctx) {
 
   async function bewaar() {
     if (!geldigeLijst(concept.alert_email)) return toast("Een van de adressen bij Interne melding klopt niet.", { fout: true });
-    if (!geldigeLijst(concept.eigenaar_email)) return toast("Het e-mailadres van de verkoper klopt niet.", { fout: true });
     if (concept.antwoord_aan && !EMAIL.test(concept.antwoord_aan)) return toast("Het adres bij Antwoorden klopt niet.", { fout: true });
     if (concept.reminder_uren_vooraf != null && !(concept.reminder_uren_vooraf >= 1)) return toast("Kies minstens 1 uur voor de herinnering.", { fout: true });
     for (const m of MAILS) {

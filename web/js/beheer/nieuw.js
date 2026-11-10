@@ -108,7 +108,7 @@ export async function toon(container, query) {
         veld({
           label: "Neem het formulier, de teksten en de mailinstellingen over van",
           input: bron,
-          hulp: "Foto, prijs, verkoper en verkopersrapport worden niet overgenomen. Kijk de teksten na: ze kunnen nog over het andere pand gaan.",
+          hulp: "Foto, prijs en verkopersrapport worden niet overgenomen. Kijk de teksten na: ze kunnen nog over het andere pand gaan.",
         }))),
     fout,
     el("div", { className: "form-acties" }, knop, el("a", { className: "knop lijn", href: "#/adressen" }, "Annuleren")));

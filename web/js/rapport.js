@@ -42,9 +42,7 @@ function teken(r) {
       el("p", { className: "label" }, "Verkopersrapport"),
       gemeente ? el("p", { className: "oog", style: { marginTop: "14px" } }, gemeente.replace(/^\d{4}\s*/, "")) : null,
       el("h1", {}, straat),
-      el("p", { className: "tekst" }, r.eigenaar_naam
-        ? `Hallo ${r.eigenaar_naam}, hier volg je live hoeveel interesse er is voor je woning.`
-        : "Hier volg je live hoeveel interesse er is voor je woning."),
+      el("p", { className: "tekst" }, "Hier volg je live hoeveel interesse er is voor je woning."),
       el("p", { className: "klein", style: { marginTop: "10px" } },
         `Bijgewerkt op ${datumLang(dagSleutel(r.bijgewerkt))} om ${uur(r.bijgewerkt)}. `, vernieuw,
         el("br"), "Namen en contactgegevens van bezoekers tonen we hier bewust niet.")));

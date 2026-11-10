@@ -5,10 +5,9 @@
 import { balken, capaciteitKolommen, kolommen, meter, trechter } from "../grafieken.js";
 import { icoon } from "../iconen.js";
 import { cap, datumKaal, datumLang, el, getal, procent, uur, vandaagSleutel } from "../tekst.js";
-import { komendeDagen } from "./datum.js";
+import { klaarmaken, toonKlaarmaken } from "./klaarmaken.js";
 import { staat } from "./staat.js";
-import { teDoen } from "./pand.js";
-import { aantal, datumBlad, kopieer, leeg, relatief, sectie, tegel, teKoop } from "./ui.js";
+import { aantal, datumBlad, kopieer, leeg, relatief, sectie, tegel } from "./ui.js";
 
 const KANAAL_LABEL = { direct: "Rechtstreeks of onbekend", beheer: "Ingevoerd in het beheer" };
 const APPARAAT_LABEL = { mobiel: "Gsm of tablet", desktop: "Computer", onbekend: "Onbekend" };
@@ -17,30 +16,8 @@ const BRONNEN_LINK = [
   ["nieuwsbrief", "Nieuwsbrief"], ["mailing", "Mailing"], ["bord", "QR-code op het bord"], ["website", "Website Henry Houser"],
 ];
 
-// Concept uit Monday: eerst afwerken, dan publiceren.
-function conceptLijst(ctx) {
-  const p = ctx.pagina;
-  const items = teDoen(p, ctx.beschikbaarheid);
-  const open = items.filter((i) => !i.ok && !i.vrij).length;
-  const knop = el("button", { type: "button", className: "knop zwart klein", disabled: open > 0 }, icoon("oog"), "Publiceren");
-  knop.addEventListener("click", async () => {
-    knop.disabled = true;
-    if (await ctx.publiceer()) location.hash = `#/p/${ctx.id}`;
-    else knop.disabled = false;
-  });
-  const dringend = teKoop(p);
-  return sectie({
-    titel: "Klaar om te publiceren?",
-    sub: dringend ? "Dit dossier staat in Monday al op te koop. Werk de pagina af zodat bezoekers kunnen boeken."
-      : "Aangemaakt uit Monday. Bezoekers zien nog dat ze binnenkort een bezoek kunnen inplannen.",
-    klasse: `checklist${dringend ? " dringend" : ""}`,
-  }, el("ul", { className: "check-lijst" }, items.map((i) => el("li", { className: i.ok ? "ok" : "" },
-    el("span", { className: "check-bol", "aria-hidden": "true" }, i.ok ? icoon("vink") : null),
-    i.ok ? el("span", {}, i.tekst, el("span", { className: "sr" }, ", klaar"))
-      : el("a", { href: `#/p/${ctx.id}/${i.tab}` }, i.tekst, i.vrij ? " (aanbevolen)" : "")))),
-  el("div", { className: "publiceer-rij" }, knop,
-    el("span", { className: "klein" }, open ? `Nog ${aantal(open, "punt", "punten")} af te werken.` : "Alles is ingevuld.")));
-}
+// Geen persoonsgegevens tonen (zelfde regel als monday_veilig() in de databank).
+const PERSOONLIJK = /klant|verkoper|eigenaar|notaris|mail|telefoon|gsm|rekening|iban|rijksregister/i;
 
 // Wat Monday over dit dossier weet (alleen-lezen; aanpassen doe je in Monday).
 function mondaySectie(ctx) {
@@ -48,7 +25,7 @@ function mondaySectie(ctx) {
   if (!p.monday_item_id) return "";
   const g = p.monday_gegevens || {};
   const rijen = [["Status", p.monday_status], ["Groep", p.monday_groep],
-    ...Object.entries(g).filter(([k]) => !/^status dossier$/i.test(k))];
+    ...Object.entries(g).filter(([k]) => !/^status dossier$/i.test(k) && !PERSOONLIJK.test(k))];
   return sectie({
     titel: "Uit Monday",
     sub: p.monday_gezien_op ? `Laatst bijgewerkt ${relatief(p.monday_gezien_op)}.` : null,
@@ -59,25 +36,9 @@ function mondaySectie(ctx) {
   ])));
 }
 
-function checklist(ctx) {
-  const p = ctx.pagina;
-  if (p.concept && !p.gearchiveerd) return conceptLijst(ctx);
-  const items = [
-    { ok: !!p.foto_pad, tekst: "Foto toevoegen", tab: "pagina" },
-    { ok: komendeDagen(ctx.beschikbaarheid).length > 0, tekst: "Bezoekdag inplannen", tab: "dagen" },
-    { ok: !!p.kickoff_prijs, tekst: "Kick-off prijs invullen", tab: "pagina" },
-    { ok: !!p.pand_url, tekst: "Link naar het pand op henryhouser.be", tab: "pagina" },
-    { ok: !!(p.eigenaar_email || "").trim(), tekst: "E-mailadres van de verkoper", tab: "mails" },
-    { ok: p.actief, tekst: "Pagina online zetten", tab: "pagina" },
-  ];
-  const open = items.filter((i) => !i.ok).length;
-  if (!open || ["afgelopen", "archief"].includes(ctx.fase())) return null;
-  return sectie({
-    titel: "Klaar voor bezoekers?", sub: `Nog ${aantal(open, "punt", "punten")} om af te werken.`, klasse: "checklist",
-  }, el("ul", { className: "check-lijst" }, items.map((i) => el("li", { className: i.ok ? "ok" : "" },
-    el("span", { className: "check-bol", "aria-hidden": "true" }, i.ok ? icoon("vink") : null),
-    i.ok ? el("span", {}, i.tekst, el("span", { className: "sr" }, ", klaar"))
-      : el("a", { href: `#/p/${ctx.id}/${i.tab}` }, i.tekst)))));
+// Nog niet klaar: alles op één plek bewerkbaar (zie klaarmaken.js).
+function checklist(paneel, ctx) {
+  return toonKlaarmaken(ctx) ? klaarmaken(ctx, { opGepubliceerd: () => toon(paneel, ctx) }) : null;
 }
 
 function linkMaker(ctx, { los = false } = {}) {
@@ -151,7 +112,7 @@ export async function toon(paneel, ctx) {
   // Nog niets bekeken of geboekt: geen lege grafieken, wel de dagen en de links voor advertenties.
   if (geenCijfers) {
     paneel.replaceChildren(
-      checklist(ctx) || "",
+      checklist(paneel, ctx) || "",
       ctx.pagina.concept ? mondaySectie(ctx) : "",
       tegels,
       leeg({
@@ -165,7 +126,7 @@ export async function toon(paneel, ctx) {
   }
 
   paneel.replaceChildren(
-    checklist(ctx) || "",
+    checklist(paneel, ctx) || "",
     tegels,
 
     k.voorbij ? sectie({

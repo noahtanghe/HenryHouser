@@ -23,8 +23,8 @@ Interne boekingstool die YouCanBookMe vervangt. Elk pand krijgt een boekingspagi
 | Wachtrij versturen (reminders, herkansingen), elke 5 min via pg_cron | `supabase/functions/verstuur`, `supabase/cron.sql` |
 
 **Bij een boeking** gaan meteen: bevestiging naar de bezoeker (met .ics-bijlage, knoppen Google / Office 365 / .ics
-en annuleerknop), alert naar `alert_email` en een melding naar `eigenaar_email` (met de link naar het
-verkopersrapport). Een reminder-mail wordt `reminder_uren_vooraf` uur vooraf ingepland (48 = 2 dagen).
+en annuleerknop) en een alert naar `alert_email`. De verkoper krijgt geen mails: we bewaren geen naam of
+e-mailadres van de verkoper; de link naar het verkopersrapport bezorg je zelf. Een reminder-mail wordt `reminder_uren_vooraf` uur vooraf ingepland (48 = 2 dagen).
 
 **Bij annulering**: annuleringsmail naar de bezoeker, interne melding naar `alert_email`, en de geplande reminder vervalt.
 
@@ -38,11 +38,18 @@ Nog niet: sms, Google Calendar-koppeling.
 `https://afspraak.henryhouser.be/beheer`
 
 - **Overzicht**: bezoeken van vandaag en morgen (met belknop), komende Homeruns met bezetting, wat aandacht vraagt
-  (geen bezoekdagen, geen foto, geen e-mail van de verkoper, mails die niet vertrokken) en de laatste boekingen.
+  (pagina's uit Monday die nog af te werken zijn, een bezoekdag uit Monday die niet ingepland staat, geen
+  bezoekdagen, geen foto, mails die niet vertrokken) en de laatste boekingen.
 - **Adressen**: alle panden per fase (komend, nieuw, afgelopen, archief), zoeken, en per adres de link om te kopiëren.
   Een nieuw adres maak je van nul of als kopie van een ander adres (teksten, formulier en mails gaan mee).
+- **Monday** (`supabase/functions/monday`, elke 10 minuten): een dossier met een url website (in voorbereiding, of
+  te koop met een komende bezoekdag) krijgt een pagina als concept, met bezoeken van 40 minuten. De bezoekdag uit
+  Monday (kolom Bezoekdag, anders een datum in de kolom Homerun) wordt automatisch ingepland van 09:00 tot 19:00 en
+  schuift mee als ze in Monday verandert en nog niemand geboekt heeft. Aanpassen in het beheer blijft staan.
+  Kolommen met persoonsgegevens (naam klant, notaris, e-mail, telefoon) worden niet overgenomen.
 - **Per adres**:
-  - *Overzicht*: checklist "klaar voor bezoekers", weergaven, unieke bezoekers, afspraken, bezetting, de weg van
+  - *Overzicht*: zolang de pagina niet klaar is bovenaan "Klaar om te publiceren?": bezoekdag, foto, startmomenten
+    en prijs/link, elk meteen daar aan te passen (`klaarmaken.js`), met de knop Publiceren. Daaronder weergaven, unieke bezoekers, afspraken, bezetting, de weg van
     weergave tot afspraak (en tot bod), per bezoekdag, per startuur, bronnen, waar bezoekers vandaan kwamen, toestel,
     hoe lang op voorhand geboekt, en links met `?utm_source=` voor advertenties.
   - *Bezoekers*: komend, voorbij en geannuleerd; aanduiden wie er geweest is, wie niet kwam en wie een bod deed,
@@ -51,7 +58,7 @@ Nog niet: sms, Google Calendar-koppeling.
   - *Bezoekdagen*: dagen en uren waarop bezoekers kunnen kiezen.
   - *Bezoekerspagina*: foto (wordt verkleind en bijgesneden voor de mail), adres, titel, kick-off prijs, intro,
     formuliervelden en bevestigingsscherm, met een live voorbeeld op gsm of computer (`?voorbeeld=1`, boekt niet).
-  - *Mails*: alle mailteksten met voorbeeld, afzender, en de verkoper die meldingen krijgt.
+  - *Mails*: alle mailteksten met voorbeeld, afzender en interne ontvangers.
   - *Verkopersrapport*: een eigen link per adres (`/rapport?token=…`), die je ook kan vervangen.
   - Archiveren of verwijderen (verwijderen kan alleen zonder afspraken).
 
@@ -80,9 +87,8 @@ venster; boeken werkt in het geheugen en verschijnt meteen in het beheer. `mock-
 **Teksten** (bevestigingsscherm, onderwerpen, mails):
 
 - Placeholders: `{voornaam}` `{familienaam}` `{adres}` `{titel}` `{start}` (zaterdag 24 oktober 2026 om 09:40) `{datum}`
-  `{start_uur}` `{eigenaar_naam}` `{kickoff_prijs}`
-- In mails, op een eigen regel: `{agenda_knoppen}`, `{annuleer_knop}`, `{gegevens}` (alle formulierantwoorden),
-  `{rapport_knop}` (link naar het verkopersrapport, voor de mail aan de verkoper)
+  `{start_uur}` `{kickoff_prijs}`
+- In mails, op een eigen regel: `{agenda_knoppen}`, `{annuleer_knop}`, `{gegevens}` (alle formulierantwoorden)
 - Lege regel = nieuwe alinea, `**vet**`
 
 ## Installatie

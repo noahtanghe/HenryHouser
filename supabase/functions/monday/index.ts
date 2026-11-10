@@ -4,8 +4,9 @@
 // krijgt een boekingspagina als concept.
 //  - pg_cron, met CRON_GEHEIM: elke 10 minuten
 //  - beheerplatform, met het token van een ingelogde beheerder: knop "Nu bijwerken"
-// Kolommen worden op hun titel herkend (url website, status dossier, Naam klant, Makelaar,
-// Bezoekdag, Kick-Off prijs); alle andere kolommen gaan mee als gegevens voor het beheer.
+// Kolommen worden op hun titel herkend (url website, status dossier, Makelaar, Bezoekdag,
+// Homerun, Kick-Off prijs); de andere kolommen gaan mee als gegevens voor het beheer, behalve
+// persoonsgegevens (naam klant, notaris, e-mail, telefoon): die verlaten Monday niet.
 // Secrets: MONDAY_TOKEN (persoonlijk API-token), MONDAY_BORD_ID (standaard 65323001).
 
 import { adminClient, corsHeaders, env, fout, json } from "../_shared/http.ts";
@@ -68,6 +69,10 @@ function waarde(k: Kolom): string {
 
 const titel = (k: Kolom) => k.column.title.trim().toLowerCase();
 
+// Zelfde regel als monday_veilig() in de databank.
+const PERSOONLIJK = /klant|verkoper|eigenaar|notaris|mail|telefoon|gsm|rekening|iban|rijksregister/i;
+const persoonlijk = (k: Kolom) => ["email", "phone"].includes(k.type) || PERSOONLIJK.test(k.column.title);
+
 function zetOm(item: Item) {
   const kolommen = item.column_values;
   const zoek = (test: (k: Kolom) => boolean) => {
@@ -76,6 +81,7 @@ function zetOm(item: Item) {
   };
   const gegevens: Record<string, string> = {};
   for (const k of kolommen) {
+    if (persoonlijk(k)) continue;
     const w = waarde(k);
     if (w) gegevens[k.column.title.trim()] = w;
   }
@@ -85,10 +91,9 @@ function zetOm(item: Item) {
     groep: item.group?.title ?? null,
     status: zoek((k) => titel(k) === "status dossier") ?? zoek((k) => k.type === "status" && titel(k).includes("status")),
     url: zoek((k) => titel(k) === "url website"),
-    klant: zoek((k) => titel(k) === "naam klant") ?? zoek((k) => titel(k).includes("klant") && k.type !== "email"),
     makelaar: zoek((k) => titel(k).startsWith("mak")),
-    email: zoek((k) => k.type === "email") ?? zoek((k) => titel(k).includes("mail")),
     bezoekdag: zoek((k) => k.type === "date" && titel(k) === "bezoekdag"),
+    homerun: zoek((k) => titel(k) === "homerun"),
     kickoff: zoek((k) => titel(k).replace(/[^a-z]/g, "") === "kickoffprijs"),
     gegevens,
   };

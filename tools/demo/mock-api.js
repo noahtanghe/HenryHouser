@@ -78,7 +78,6 @@
     bevestigingsscherm: T.bevestigingsscherm || "Hallo {voornaam}! Jouw afspraak ligt vast voor {start}.",
     mail_onderwerp: T.mail_onderwerp || "bezoek: {adres}",
     mail_bevestiging: T.mail_bevestiging ?? null,
-    mail_eigenaar: T.mail_eigenaar ?? null,
     mail_alert: T.mail_alert ?? null,
     mail_reminder_onderwerp: T.mail_reminder_onderwerp || "Herinnering bezoek: {adres}",
     mail_reminder: T.mail_reminder ?? null,
@@ -98,14 +97,17 @@
       duur_min: 40, slot_interval_min: 40, max_per_slot: 1, min_minuten_vooraf: 60,
       formuliervelden: kopie(VELDEN),
       afzender: T.afzender || "Henry Houser <backoffice@henryhouser.be>", antwoord_aan: null,
-      alert_email: T.alert_email || "backoffice@henryhouser.be", eigenaar_email: null, eigenaar_naam: null,
+      alert_email: T.alert_email || "backoffice@henryhouser.be",
       foto_pad: null, kickoff_prijs: null, pand_url: null, rapport_token: uuid(),
-      concept: false, bezoek_ingesteld: true, monday_item_id: null, monday_status: null, monday_groep: null,
-      monday_gegevens: null, monday_gezien_op: null, monday_bezoekdag: null, makelaar: null,
+      concept: false, monday_item_id: null, monday_status: null, monday_groep: null,
+      monday_gegevens: null, monday_gezien_op: null, monday_bezoekdag: null, monday_dag_ingepland: null, makelaar: null,
       created_at: gemaakt, updated_at: gemaakt,
       ...kopie(TEKSTEN), ...v,
     };
   }
+
+  // Zoals in de kolom Homerun van Monday: "zondag 15/11"
+  const homerunTekst = (d) => `${new Intl.DateTimeFormat("nl-BE", { weekday: "long", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`))} ${Number(d.slice(8))}/${Number(d.slice(5, 7))}`;
 
   const HR = "2026-10-31" >= plus(VANDAAG, 3) ? "2026-10-31" : volgende(plus(VANDAAG, 7), 6);
   const HR_PROEF = plus(HR, 7);
@@ -125,7 +127,6 @@
     nieuwePagina({
       id: "proeflaan", slug: "proeflaan21", adres: "Proeflaan 21, 8530 Harelbeke", kickoff_prijs: 289000,
       duur_min: 30, slot_interval_min: 30, max_per_slot: 2,
-      eigenaar_naam: "familie Voorbeeld", eigenaar_email: "verkoper@voorbeeld.be",
       created_at: lokaal(plus(VANDAAG, -4), "09:05"),
     }),
     nieuwePagina({
@@ -134,29 +135,28 @@
     }),
     nieuwePagina({
       id: "testdreef", slug: "testdreef7", adres: "Testdreef 7, 8560 Wevelgem", kickoff_prijs: 349000,
-      eigenaar_naam: "Mevrouw Voorbeeld", eigenaar_email: "verkoper2@voorbeeld.be",
       created_at: lokaal(plus(HR_TEST, -21), "11:00"),
     }),
     nieuwePagina({
       id: "oefenstraat", slug: "oefenstraat2", adres: "Oefenstraat 2, 8500 Kortrijk", kickoff_prijs: 265000,
-      actief: false, gearchiveerd: true, eigenaar_naam: "familie Proef", eigenaar_email: "verkoper3@voorbeeld.be",
+      actief: false, gearchiveerd: true,
       created_at: lokaal(plus(HR_OEFEN, -18), "11:00"),
     }),
     // Concepten uit Monday (zie supabase/functions/monday): nog af te werken in het beheer.
     nieuwePagina({
       id: "mondaylaan", slug: "mondaylaan5", adres: "Mondaylaan 5, 8500 Kortrijk", kickoff_prijs: 365000,
-      pand_url: "https://www.mondaylaan5.be", eigenaar_naam: "familie Monday", actief: false, concept: true, bezoek_ingesteld: false,
+      pand_url: "https://www.mondaylaan5.be", actief: false, concept: true,
       monday_item_id: 1001, monday_status: "te koop", monday_groep: "actief te koop", makelaar: "Hendrik",
       monday_bezoekdag: plus(VANDAAG, 5), monday_gezien_op: iso(NU - 6 * 60e3),
-      monday_gegevens: { "Naam klant": "familie Monday", "url website": "www.mondaylaan5.be", Homerun: "zaterdag", "Kick-Off prijs": "365000", "EPC": "ontvangen", "HH-nummer": "HH0001" },
+      monday_gegevens: { "url website": "www.mondaylaan5.be", Homerun: homerunTekst(plus(VANDAAG, 5)), "Kick-Off prijs": "365000", "EPC": "ontvangen", "HH-nummer": "HH0001" },
       created_at: lokaal(VANDAAG, "08:10"),
     }),
     nieuwePagina({
       id: "conceptstraat", slug: "conceptstraat12", adres: "Conceptstraat 12, 8520 Kuurne",
-      pand_url: "https://www.conceptstraat12.be", eigenaar_naam: "Mevrouw Concept", actief: false, concept: true, bezoek_ingesteld: false,
+      pand_url: "https://www.conceptstraat12.be", actief: false, concept: true,
       monday_item_id: 1002, monday_status: "in voorbereiding", monday_groep: "In voorbereiding", makelaar: "Hendrik",
-      monday_bezoekdag: plus(VANDAAG, 26), monday_gezien_op: iso(NU - 6 * 60e3),
-      monday_gegevens: { "Naam klant": "Mevrouw Concept", "url website": "www.conceptstraat12.be", "Fotografie & 360°": "in te plannen", "HH-nummer": "HH0002" },
+      monday_bezoekdag: null, monday_gezien_op: iso(NU - 6 * 60e3),
+      monday_gegevens: { "url website": "www.conceptstraat12.be", Homerun: "op afspraak", "Fotografie & 360°": "in te plannen", "HH-nummer": "HH0002" },
       created_at: lokaal(VANDAAG, "08:10"),
     }),
   ];
@@ -169,6 +169,15 @@
     { id: "b-testdreef", pagina_id: "testdreef", datum_van: HR_TEST, datum_tot: HR_TEST, van: "10:00:00", tot: "17:00:00", weekdagen: [1, 2, 3, 4, 5, 6, 7] },
     { id: "b-oefenstraat", pagina_id: "oefenstraat", datum_van: HR_OEFEN, datum_tot: HR_OEFEN, van: "09:00:00", tot: "13:00:00", weekdagen: [1, 2, 3, 4, 5, 6, 7] },
   ];
+  // Zoals monday_plan_bezoekdag(): de bezoekdag uit Monday staat er automatisch, 09:00 tot 19:00.
+  for (const p of paginas) {
+    if (!p.monday_bezoekdag || p.monday_bezoekdag < VANDAAG) continue;
+    if (!beschikbaarheid.some((r) => r.pagina_id === p.id && r.datum_van <= p.monday_bezoekdag && r.datum_tot >= p.monday_bezoekdag)) {
+      beschikbaarheid.push({ id: `b-${p.id}`, pagina_id: p.id, datum_van: p.monday_bezoekdag, datum_tot: p.monday_bezoekdag,
+        van: "09:00:00", tot: "19:00:00", weekdagen: [1, 2, 3, 4, 5, 6, 7], uit_monday: true });
+    }
+    p.monday_dag_ingepland = p.monday_bezoekdag;
+  }
 
   const boekingen = [];
   const berichten = [];
@@ -229,7 +238,6 @@
     const na = (s) => iso(Date.parse(b.created_at) + s * 1000);
     if (mailBezoeker) bericht(b, "bevestiging", b.email, { op: b.created_at, verzonden: na(4) });
     if (alert && p.alert_email) bericht(b, "alert", p.alert_email, { op: b.created_at, verzonden: na(5) });
-    if (p.eigenaar_email) bericht(b, "eigenaar", p.eigenaar_email, { op: b.created_at, verzonden: na(6) });
     if (p.reminder_uren_vooraf) {
       const moment = Date.parse(b.start) - p.reminder_uren_vooraf * 3600e3;
       if (moment > Date.parse(b.created_at)) {
@@ -489,11 +497,16 @@
           return { boeking_id: m.boeking_id, pagina_id: b.pagina_id, adres: adres(b.pagina_id), soort: m.soort, ontvanger: m.ontvanger, fout: m.fout, gepland_op: m.gepland_op };
         }),
         vastgelopen: 0,
-        concepten: actief.filter((p) => p.concept).map((p) => ({ id: p.id, adres: p.adres, monday_status: p.monday_status, te_koop: /te koop/i.test(p.monday_status || "") })),
+        concepten: actief.filter((p) => p.concept).map((p) => ({
+          id: p.id, adres: p.adres, monday_status: p.monday_status, te_koop: /te koop/i.test(p.monday_status || ""),
+          ontbreekt: [!metToekomst(p) ? "bezoekdag" : null, !p.foto_pad ? "foto" : null].filter(Boolean),
+        })),
         monday_fout: mondaySync.fout,
+        bezoekdag_monday: actief.filter((p) => p.monday_bezoekdag && p.monday_bezoekdag >= VANDAAG
+          && !beschikbaarheid.some((r) => r.pagina_id === p.id && r.datum_van <= p.monday_bezoekdag && r.datum_tot >= p.monday_bezoekdag))
+          .map((p) => ({ id: p.id, adres: p.adres, dag: p.monday_bezoekdag })),
         zonder_data: actief.filter((p) => !p.concept).filter((p) => !beschikbaarheid.some((r) => r.pagina_id === p.id))
           .sort((a, b) => b.created_at.localeCompare(a.created_at)).map((p) => ({ id: p.id, adres: p.adres })),
-        zonder_eigenaar: actief.filter((p) => !p.concept && !(p.eigenaar_email || "").trim() && metToekomst(p)).map((p) => ({ id: p.id, adres: p.adres })),
         zonder_foto: actief.filter((p) => !p.concept && !p.foto_pad && metToekomst(p)).map((p) => ({ id: p.id, adres: p.adres })),
       },
     };
@@ -557,7 +570,7 @@
     const w = {
       voornaam: b.voornaam, familienaam: b.familienaam || "", adres: p.adres, titel: p.titel,
       start: `${datumJaarServer.format(new Date(b.start))} om ${uurVan(b.start)}`, datum: datumLangServer.format(new Date(b.start)),
-      start_uur: uurVan(b.start), eigenaar_naam: p.eigenaar_naam || "",
+      start_uur: uurVan(b.start),
       kickoff_prijs: p.kickoff_prijs ? `${new Intl.NumberFormat("nl-BE").format(p.kickoff_prijs)} euro` : "",
     };
     const stempel = (t) => t.replace(/[-:]/g, "").replace(/\.\d{3}/, "");
@@ -593,7 +606,7 @@
     const k = s.kpi;
     return {
       adres: p.adres, titel: p.titel, foto_pad: p.foto_pad, foto_url: fotos[p.foto_pad] || null, kickoff_prijs: p.kickoff_prijs,
-      eigenaar_naam: p.eigenaar_naam, bijgewerkt: iso(Date.now()),
+      bijgewerkt: iso(Date.now()),
       kpi: { weergaven: k.weergaven, bezoekers: k.bezoekers, actief: k.actief, geannuleerd: k.geannuleerd, capaciteit: k.capaciteit, geweest: k.geweest, voorbij: k.voorbij },
       per_dag: s.per_dag, per_homerundag: s.per_homerundag, bronnen: s.bronnen,
     };
@@ -718,7 +731,8 @@
       if (paginas.some((x) => x.slug === velden.slug)) throw fout("duplicate key value violates unique constraint \"paginas_slug_key\"");
       const bron = bronId ? kopie(vind(bronId)) : {};
       for (const k of ["id", "created_at", "updated_at", "slug", "adres", "titel", "foto_pad", "kickoff_prijs", "pand_url",
-        "gearchiveerd", "eigenaar_naam", "eigenaar_email", "rapport_token"]) delete bron[k];
+        "gearchiveerd", "rapport_token", "concept", "monday_item_id", "monday_status", "monday_groep", "monday_gegevens",
+        "monday_gezien_op", "monday_bezoekdag", "monday_dag_ingepland", "makelaar"]) delete bron[k];
       const p = nieuwePagina({ ...bron, ...kopie(velden), id: `nieuw-${Date.now().toString(36)}`, created_at: iso(Date.now()) });
       paginas.push(p);
       return kopie(p);

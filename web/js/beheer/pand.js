@@ -11,6 +11,7 @@ import * as dagen from "./pand-dagen.js";
 import * as mails from "./pand-mails.js";
 import * as overzicht from "./pand-overzicht.js";
 import * as pagina from "./pand-pagina.js";
+import { teDoen } from "./klaarmaken.js";
 import { staat } from "./staat.js";
 import { actiefInBeeld, badge, bevestig, foutTekst, kopieer, laadBlok, menuKnop, openDialoog, teKoop, toast } from "./ui.js";
 
@@ -40,17 +41,6 @@ export function statusPand(p, beschikbaarheid) {
   return { tekst: "Afgelopen", klasse: "salie" };
 }
 
-/** Wat een concept uit Monday nog nodig heeft voor het gepubliceerd kan worden. */
-export function teDoen(p, beschikbaarheid) {
-  return [
-    { ok: p.bezoek_ingesteld, tekst: "Bezoekduur en interval instellen", tab: "dagen" },
-    { ok: !!p.foto_pad, tekst: "Foto toevoegen", tab: "pagina" },
-    { ok: komendeDagen(beschikbaarheid).length > 0, tekst: "Bezoekdag inplannen", tab: "dagen" },
-    // Niet verplicht: Monday kent het e-mailadres niet, en zonder krijgt de verkoper gewoon geen meldingen.
-    { ok: !!(p.eigenaar_email || "").trim(), tekst: "E-mailadres van de verkoper", tab: "mails", vrij: true },
-  ];
-}
-
 function fase() {
   if (h.pagina.gearchiveerd) return "archief";
   if (h.pagina.concept) return "concept";
@@ -66,6 +56,7 @@ export const ctx = {
   get beschikbaarheid() { return h.beschikbaarheid; },
   fase,
   publiceer,
+  zetOnline,
   async bewaar(velden) {
     h.pagina = await staat.api.paginaBewaren(h.id, velden);
     tekenKop();
@@ -169,19 +160,21 @@ async function zetOnline(aan) {
     titel: "Pagina offline zetten?",
     tekst: "Er zijn nog komende afspraken. Die blijven gewoon staan, maar nieuwe bezoekers kunnen niet meer boeken.",
     ja: "Offline zetten",
-  }))) return;
+  }))) return false;
   try {
     await ctx.bewaar(aan ? { actief: true, gearchiveerd: false } : { actief: false });
     toast(aan ? "De pagina staat online." : "De pagina staat offline. Bezoekers zien een melding.");
+    return true;
   } catch (err) {
     toast(foutTekst(err), { fout: true });
+    return false;
   }
 }
 
 async function publiceer() {
-  const open = teDoen(h.pagina, h.beschikbaarheid).filter((i) => !i.ok && !i.vrij);
+  const open = teDoen(h.pagina, h.beschikbaarheid).filter((i) => !i.ok);
   if (open.length) {
-    toast(`Nog niet klaar: ${open.map((i) => i.tekst.toLowerCase()).join(", ")}.`, { fout: true });
+    toast(`Nog niet klaar: ${open.map((i) => i.tekst).join(" en ")} ontbreekt.`, { fout: true });
     return false;
   }
   const dagen = komendeDagen(h.beschikbaarheid);
@@ -259,7 +252,6 @@ function rapportDialoog() {
   const kopKnop = el("button", { type: "button", className: "knop zwart klein" }, icoon("kopie"), "Kopieer link");
   kopKnop.addEventListener("click", () => kopieer(url, "Link naar het verkopersrapport gekopieerd."));
   const nieuw = el("button", { type: "button", className: "link gevaar" }, "maak een nieuwe link");
-  const naarMails = el("a", { href: `#/p/${p.id}/mails` }, "Mails");
 
   const { sluit } = openDialoog({
     titel: "Verkopersrapport",
@@ -268,14 +260,10 @@ function rapportDialoog() {
         "Een eigen pagina voor de verkoper met de interesse in de woning: paginaweergaven, afspraken en de bezetting per bezoekdag. Zonder namen of contactgegevens van bezoekers."),
       el("div", { className: "kopieer-rij" }, invoer, kopKnop,
         el("a", { className: "knop lijn klein", href: url, target: "_blank", rel: "noopener" }, icoon("extern"), "Open")),
-      p.eigenaar_email
-        ? el("p", { className: "dialoog-tekst" }, `De verkoper (${p.eigenaar_email}) krijgt deze link automatisch bij elke nieuwe afspraak.`)
-        : el("p", { className: "dialoog-tekst" }, "Vul het e-mailadres van de verkoper in bij ", naarMails,
-          ", dan krijgt die de link automatisch bij elke nieuwe afspraak."),
+      el("p", { className: "dialoog-tekst" }, "Bezorg de verkoper deze link zelf, bijvoorbeeld per mail. De cijfers op de pagina zijn altijd actueel."),
       el("p", { className: "klein" }, "Link bij de verkeerde persoon beland? Dan ", nieuw, ". De oude link werkt daarna niet meer."),
     ],
   });
-  naarMails.addEventListener("click", () => sluit());
   nieuw.addEventListener("click", async () => {
     if (!(await bevestig({
       titel: "Nieuwe link maken?",
