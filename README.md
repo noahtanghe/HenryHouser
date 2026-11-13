@@ -46,11 +46,11 @@ Nog niet: sms, Google Calendar-koppeling.
   te koop met een komende bezoekdag) krijgt een pagina als concept, met bezoeken van 40 minuten. De bezoekdag uit
   Monday (kolom Bezoekdag, anders een datum in de kolom Homerun) wordt automatisch ingepland van 09:00 tot 19:00 en
   schuift mee als ze in Monday verandert en nog niemand geboekt heeft. Aanpassen in het beheer blijft staan.
+  Kolommen met persoonsgegevens (naam klant, notaris, e-mail, telefoon) worden niet overgenomen.
 - **Foto van de pandsite** (`supabase/functions/_shared/pandfoto.ts`, bij elke Monday-run): een adres met een link naar
   de pandsite maar zonder foto krijgt de hoofdfoto van die site (og:image, op de Wix-pandsites de grote foto bovenaan).
   Een foto die je zelf oplaadt gaat altijd voor; een verwijderde foto komt niet terug. Knop "Foto van pandsite" in het
   beheer haalt ze opnieuw op. Verwijst de pandsite door naar henryhouser.be (na verkoop), dan gebeurt er niets.
-  Kolommen met persoonsgegevens (naam klant, notaris, e-mail, telefoon) worden niet overgenomen.
 - **Per adres**:
   - *Overzicht*: zolang de pagina niet klaar is bovenaan "Klaar om te publiceren?": bezoekdag, foto, startmomenten
     en prijs/link, elk meteen daar aan te passen (`klaarmaken.js`), met de knop Publiceren. Daaronder weergaven, unieke bezoekers, afspraken, bezetting, de weg van
