@@ -5,7 +5,7 @@
 import { icoon } from "../iconen.js";
 import { boogFoto } from "../kader.js";
 import { dagSleutel, el, getal } from "../tekst.js";
-import { fotoOpladen } from "./foto.js";
+import { fotoHerkomst, fotoOpladen, fotoVanPandsite } from "./foto.js";
 import { VASTE_VELDEN, VERPLICHTE_VELDEN } from "./standaard.js";
 import { staat } from "./staat.js";
 import { bevestig, bewaarBalk, foutTekst, ikoonKnop, sectie, segment, toast, veld, vinkje } from "./ui.js";
@@ -76,14 +76,19 @@ export async function toon(paneel, ctx) {
     const kies = el("input", { type: "file", accept: "image/jpeg,image/png,image/webp,image/*", className: "sr", id: "foto-kies" });
     const kiesLabel = el("label", { className: "knop zwart klein", for: "foto-kies" }, icoon("upload"), pad ? "Andere foto kiezen" : "Foto kiezen");
     const weg = pad ? el("button", { type: "button", className: "knop lijn klein" }, icoon("prullenbak"), "Verwijderen") : null;
+    const vanSite = ctx.pagina.pand_url && !status
+      ? el("button", { type: "button", className: "knop lijn klein" }, "Foto van pandsite") : null;
+    const herkomst = fotoHerkomst(ctx.pagina);
     const zone = el("div", { className: `foto-zone${status ? " bezig" : ""}` },
       boogFoto(api.fotoUrl(pad), "Foto van het pand", "foto-boog"),
       el("div", { className: "foto-tekst" },
         el("p", {}, pad ? "Deze foto zien bezoekers bovenaan de pagina, in een boog zoals op henryhouser.be." : "Nog geen foto. Bezoekers zien nu een lege boog met het monogram."),
+        herkomst ? el("p", { className: "klein" }, herkomst) : null,
         el("p", { className: "klein" }, "Sleep een foto hierheen of kies er een. Een staande foto past het mooist. Grote foto's verkleinen we automatisch."),
         status ? el("p", { className: "foto-status", role: "status" }, el("span", { className: "laad-balk" }), status) : null,
-        el("div", { className: "foto-knoppen" }, kies, kiesLabel, weg)));
+        el("div", { className: "foto-knoppen" }, kies, kiesLabel, vanSite, weg)));
     kies.addEventListener("change", () => kies.files[0] && laadOp(kies.files[0]));
+    vanSite?.addEventListener("click", haalVanSite);
     weg?.addEventListener("click", verwijderFoto);
     zone.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -105,6 +110,21 @@ export async function toon(paneel, ctx) {
     bezigMetFoto = true;
     try {
       await fotoOpladen(ctx, bestand, tekenFoto);
+    } catch (err) {
+      console.error(err);
+      toast(foutTekst(err), { fout: true });
+    } finally {
+      bezigMetFoto = false;
+      tekenFoto();
+      stuur();
+    }
+  }
+
+  async function haalVanSite() {
+    if (bezigMetFoto) return;
+    bezigMetFoto = true;
+    try {
+      await fotoVanPandsite(ctx, tekenFoto);
     } catch (err) {
       console.error(err);
       toast(foutTekst(err), { fout: true });

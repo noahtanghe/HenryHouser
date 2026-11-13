@@ -841,6 +841,19 @@
       if (breed) fotos[pad.replace(/\.jpg$/, "-breed.jpg")] = URL.createObjectURL(breed);
       return pad;
     },
+    // Zoals de edge function "monday" met actie "foto": de hoofdfoto van de pandsite.
+    async fotoVanPandsite(id) {
+      await wacht(900);
+      const p = vind(id);
+      if (!p.pand_url) throw fout("Vul eerst de link naar de pandsite in.");
+      const bron = `https://static.wixstatic.com/media/demo-${p.slug}.jpg`;
+      if (p.foto_pad && p.foto_bron === bron) return { veranderd: false, pagina: kopie(p) };
+      const pad = `${id}/${Date.now()}.jpg`;
+      fotos[pad] = fotos["aalbeek/1760890000000.jpg"];
+      fotos[pad.replace(/\.jpg$/, "-breed.jpg")] = fotos["aalbeek/1760890000000-breed.jpg"];
+      Object.assign(p, { foto_pad: pad, foto_bron: bron, foto_auto_fout: null, foto_auto_op: iso(Date.now()), updated_at: iso(Date.now()) });
+      return { veranderd: true, pagina: kopie(p) };
+    },
     async fotoVerwijderen(pad) {
       for (const k of [pad, pad.replace(/\.jpg$/, "-breed.jpg")]) {
         if (fotos[k]?.startsWith("blob:")) URL.revokeObjectURL(fotos[k]);

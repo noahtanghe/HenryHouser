@@ -62,6 +62,13 @@ export const ctx = {
     tekenKop();
     return h.pagina;
   },
+  /** Foto van de pandsite (opnieuw) ophalen; de server bewaart ze. */
+  async fotoVanPandsite() {
+    const r = await staat.api.fotoVanPandsite(h.id);
+    h.pagina = r.pagina;
+    tekenKop();
+    return r.veranderd;
+  },
   async herlaadBoekingen() {
     h.boekingen = await staat.api.boekingen(h.id);
     tekenKop();
