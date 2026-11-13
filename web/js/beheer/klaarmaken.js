@@ -10,7 +10,7 @@ import { boogFoto } from "../kader.js";
 import { cap, datumKaal, datumLang, el, getal, vandaagSleutel } from "../tekst.js";
 import { dagDialoog, startmomentenDialoog, startmomentenTekst, STANDAARD_TOT, STANDAARD_VAN } from "./bezoekdag.js";
 import { dagenVan, komendeDagen, kortUur, startmomenten } from "./datum.js";
-import { fotoOpladen } from "./foto.js";
+import { fotoHerkomst, fotoOpladen, fotoVanPandsite } from "./foto.js";
 import { staat } from "./staat.js";
 import { aantal, foutTekst, openDialoog, sectie, teKoop, toast, veld } from "./ui.js";
 
@@ -167,11 +167,27 @@ export function klaarmaken(ctx, { opGepubliceerd } = {}) {
       teken();
     };
     kies.addEventListener("change", () => kies.files[0] && laadOp(kies.files[0]));
+    // Nog geen foto maar wel een pandsite: de foto daar meteen ophalen (gebeurt anders binnen 10 minuten).
+    const vanSite = !p.foto_pad && p.pand_url && !fotoBezig ? knop("Van pandsite", "lijn", async () => {
+      fotoBezig = "Foto van de pandsite ophalen…";
+      teken();
+      try {
+        await fotoVanPandsite(ctx);
+      } catch (err) {
+        console.error(err);
+        toast(foutTekst(err), { fout: true });
+      }
+      fotoBezig = null;
+      return true;
+    }) : null;
+    const herkomst = fotoHerkomst(p);
     const li = punt({
       ok: !!p.foto_pad, titel: "Foto",
-      tekst: fotoBezig || (p.foto_pad ? "Bezoekers zien deze foto bovenaan de pagina." : "Sleep een foto hierheen of kies er een. Een staande foto past het mooist."),
+      tekst: fotoBezig || (p.foto_pad
+        ? `Bezoekers zien deze foto bovenaan de pagina.${herkomst ? ` ${herkomst}` : ""}`
+        : herkomst || "Sleep een foto hierheen of kies er een. Een staande foto past het mooist."),
       extra: fotoBezig ? el("span", { className: "laad-balk", role: "status" }) : null,
-      acties: [p.foto_pad ? boogFoto(staat.api.fotoUrl(p.foto_pad), "", "mini-boog") : null, kies, fotoBezig ? null : label].filter(Boolean),
+      acties: [p.foto_pad ? boogFoto(staat.api.fotoUrl(p.foto_pad), "", "mini-boog") : null, kies, vanSite, fotoBezig ? null : label].filter(Boolean),
       klasse: "foto-punt",
     });
     li.addEventListener("dragover", (e) => {

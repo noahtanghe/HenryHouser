@@ -40,6 +40,24 @@ async function verklein(bestand, max = 2000, kwaliteit = 0.85) {
 }
 
 /**
+ * Vervangt de foto door de hoofdfoto van de pandsite (link "Pandsite" van het adres).
+ * opStatus(tekst) toont de voortgang. Gooit een fout als het niet lukt.
+ */
+export async function fotoVanPandsite(ctx, opStatus = () => {}) {
+  opStatus("Foto van de pandsite ophalen…");
+  const veranderd = await ctx.fotoVanPandsite();
+  toast(veranderd ? "Foto van de pandsite bewaard. Bezoekers zien ze meteen." : "Dit is al de foto van de pandsite.");
+}
+
+/** Uitleg bij de foto: van de pandsite overgenomen, of waarom dat niet lukte. */
+export function fotoHerkomst(p) {
+  if (p.foto_pad && p.foto_bron) return "Automatisch overgenomen van de pandsite.";
+  if (!p.foto_pad && p.pand_url && p.foto_auto_fout) return `Foto van de pandsite ophalen lukte niet: ${p.foto_auto_fout}`;
+  if (!p.foto_pad && p.pand_url && !p.foto_auto_stop && !p.foto_auto_op) return "De foto van de pandsite komt er binnen 10 minuten automatisch bij.";
+  return null;
+}
+
+/**
  * Verkleint en bewaart een foto voor het adres van ctx; de vorige foto verdwijnt.
  * opStatus(tekst) toont de voortgang. Gooit een fout als het niet lukt.
  */

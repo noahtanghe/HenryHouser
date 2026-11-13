@@ -58,6 +58,8 @@ export function supabaseApi(cfg) {
     // Monday ----------------------------------------------------------------------
     mondayStatus: async () => ok(await sb.from("monday_sync").select("*").maybeSingle()),
     mondayBijwerken: () => functie("monday", {}, true),
+    // Hoofdfoto van de pandsite ophalen (vervangt de huidige foto): { veranderd, pagina }
+    fotoVanPandsite: (id) => functie("monday", { actie: "foto", pagina_id: id }, true),
 
     // Pagina's ------------------------------------------------------------------
     pagina: async (id) => ok(await sb.from("paginas").select("*").eq("id", id).single()),

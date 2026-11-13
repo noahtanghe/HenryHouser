@@ -4,12 +4,16 @@
 // krijgt een boekingspagina als concept.
 //  - pg_cron, met CRON_GEHEIM: elke 10 minuten
 //  - beheerplatform, met het token van een ingelogde beheerder: knop "Nu bijwerken"
+// Daarna krijgen adressen met een pandsite maar zonder foto de hoofdfoto van die site
+// (_shared/pandfoto.ts). Met {"actie": "foto", "pagina_id": ...} haalt een beheerder de foto
+// van de pandsite voor één adres opnieuw op (vervangt de huidige foto).
 // Kolommen worden op hun titel herkend (url website, status dossier, Makelaar, Bezoekdag,
 // Homerun, Kick-Off prijs); de andere kolommen gaan mee als gegevens voor het beheer, behalve
 // persoonsgegevens (naam klant, notaris, e-mail, telefoon): die verlaten Monday niet.
 // Secrets: MONDAY_TOKEN (persoonlijk API-token), MONDAY_BORD_ID (standaard 65323001).
 
 import { adminClient, corsHeaders, env, fout, json } from "../_shared/http.ts";
+import { haalPandfoto, pandfotosAanvullen } from "../_shared/pandfoto.ts";
 
 type Kolom = { id: string; type: string; text: string | null; value: string | null; column: { title: string } };
 type Item = { id: string; name: string; group: { title: string } | null; column_values: Kolom[] };
@@ -105,11 +109,31 @@ async function bijwerken() {
     const items = (await alleItems(env("MONDAY_BORD_ID", "65323001"))).map(zetOm);
     const { data, error } = await db.rpc("monday_verwerk", { p_items: items });
     if (error) throw new Error(error.message);
-    return { dossiers: items.length, ...data };
+    // Foto's van de pandsites: een fout hier mag de Monday-sync niet doen mislukken.
+    const fotos = await pandfotosAanvullen(db).catch((e) => {
+      console.error("Foto's van pandsites:", e);
+      return { fotos: 0, fotos_mislukt: 0 };
+    });
+    return { dossiers: items.length, ...data, ...fotos };
   } catch (e) {
     const melding = String((e as Error)?.message ?? e);
     await db.rpc("monday_fout", { p_fout: melding });
     throw e;
+  }
+}
+
+async function fotoVanPandsite(paginaId: string) {
+  const db = adminClient();
+  const { data: p } = await db.from("paginas").select("id, pand_url, foto_pad, foto_bron").eq("id", paginaId).maybeSingle();
+  if (!p) return fout("onbekend", "Dit adres bestaat niet.", 404);
+  const url = (p.pand_url ?? "").trim();
+  if (!url) return fout("geen_pandsite", "Vul eerst de link naar de pandsite in.");
+  try {
+    const pad = await haalPandfoto(db, { ...p, pand_url: /^https?:\/\//i.test(url) ? url : `https://${url}` }, true);
+    const { data } = await db.from("paginas").select("*").eq("id", paginaId).single();
+    return json({ veranderd: !!pad, pagina: data });
+  } catch (e) {
+    return fout("foto", String((e as Error)?.message ?? e), 422);
   }
 }
 
@@ -118,8 +142,10 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return fout("methode", "Alleen POST.", 405);
 
   const sleutel = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const body = await req.json().catch(() => ({}));
   try {
-    if (!sleutel || sleutel !== env("CRON_GEHEIM")) {
+    const viaCron = !!sleutel && sleutel === env("CRON_GEHEIM");
+    if (!viaCron) {
       const db = adminClient();
       const { data } = await db.auth.getUser(sleutel);
       const email = data?.user?.email?.toLowerCase();
@@ -128,6 +154,7 @@ Deno.serve(async (req) => {
         : { data: null };
       if (!beheerder) return fout("geweigerd", "Geen toegang.", 401);
     }
+    if (body?.actie === "foto") return await fotoVanPandsite(String(body.pagina_id ?? ""));
     if (!Deno.env.get("MONDAY_TOKEN")) {
       await adminClient().rpc("monday_fout", { p_fout: "MONDAY_TOKEN ontbreekt in de secrets van Supabase" });
       return fout("geen_token", "Het Monday-token ontbreekt nog.", 503);
